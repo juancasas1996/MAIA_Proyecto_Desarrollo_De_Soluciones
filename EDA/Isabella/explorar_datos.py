@@ -12,16 +12,19 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+# Este script vive en EDA/Isabella/, por lo que los datos están dos niveles arriba
+DATA_DIR = "../../Data/sleep-cassette"
+
 SUJETOS = [
     {
         "nombre": "SC4001",
-        "psg": "data/sleep-cassette/SC4001E0-PSG.edf",
-        "hipnograma": "data/sleep-cassette/SC4001EC-Hypnogram.edf",
+        "psg": f"{DATA_DIR}/SC4001E0-PSG.edf",
+        "hipnograma": f"{DATA_DIR}/SC4001EC-Hypnogram.edf",
     },
     {
         "nombre": "SC4002",
-        "psg": "data/sleep-cassette/SC4002E0-PSG.edf",
-        "hipnograma": "data/sleep-cassette/SC4002EC-Hypnogram.edf",
+        "psg": f"{DATA_DIR}/SC4002E0-PSG.edf",
+        "hipnograma": f"{DATA_DIR}/SC4002EC-Hypnogram.edf",
     },
 ]
 
