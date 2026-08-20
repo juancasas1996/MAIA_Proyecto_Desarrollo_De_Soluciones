@@ -1,0 +1,28 @@
+# Proyecto - Desarrollo de Soluciones
+# Clasificacion automatica de estadios del sueno (Sleep-EDF Database Expanded)
+#
+# Instalacion:  pip install -r requirements.txt
+
+# --- Lectura y procesamiento de senales EEG ---
+mne>=1.12.1
+
+# --- Manipulacion de datos ---
+numpy>=1.26.4
+pandas>=2.1.4
+xlrd>=2.0.1          # requerido por pandas para leer SC-subjects.xls (.xls antiguo)
+
+# --- Analisis de senales ---
+scipy>=1.11.0        # welch (densidad espectral) y estadisticas
+
+# --- Visualizacion ---
+matplotlib>=3.8.0
+plotly>=5.9.0
+kaleido==0.2.1       # exporta las figuras de plotly como PNG para que se vean en GitHub.
+                     # Version fija: kaleido 1.x no es compatible con plotly 5.x
+
+# --- Entorno de ejecucion ---
+jupyter>=1.0.0
+ipykernel>=6.28.0
+
+# --- Versionado de datos ---
+dvc>=3.0.0
