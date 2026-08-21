@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Morfeo — Maqueta del prototipo · Estadificación asistida del sueño</title>
+<style>
+:root, .viz-root{
+  color-scheme: light;
+  --page:#f9f9f7; --surface-1:#fcfcfb; --surface-2:#f2f1ed;
+  --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+  --series-1:#2a78d6; --series-2:#eb6834;
+  --seq-100:#cde2fb; --seq-200:#9ec5f4; --seq-300:#6da7ec; --seq-400:#3987e5;
+  --seq-500:#256abf; --seq-600:#184f95; --seq-700:#0d366b;
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  --ok-text:#006300;
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface-1:#1a1a19; --surface-2:#232322;
+  --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+  --series-1:#3987e5; --series-2:#d95926;
+  --ok-text:#0ca30c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.5}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-0.01em}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px 64px}
+
+/* ---------- header ---------- */
+header{background:var(--surface-1);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.hbar{max-width:1240px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:9px;font-weight:650;font-size:16px}
+.logo .dot{width:22px;height:22px;border-radius:6px;background:var(--series-1);
+  display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700}
+.sub{color:var(--muted);font-size:12.5px;border-left:1px solid var(--border);padding-left:14px}
+.spacer{flex:1}
+.badge{font-size:11px;font-weight:650;padding:3px 9px;border-radius:999px;letter-spacing:.02em}
+.badge.mock{background:color-mix(in srgb,var(--warning) 22%,transparent);
+  color:var(--ink);border:1px solid color-mix(in srgb,var(--warning) 55%,transparent)}
+.iconbtn{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+  padding:6px 11px;font-size:12.5px;color:var(--ink2);cursor:pointer;font-family:inherit}
+.iconbtn:hover{color:var(--ink)}
+nav{max-width:1240px;margin:0 auto;padding:0 20px;display:flex;gap:2px;overflow-x:auto}
+nav button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 14px;
+  font:inherit;font-size:13.5px;color:var(--ink2);cursor:pointer;white-space:nowrap}
+nav button:hover{color:var(--ink)}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--series-1);font-weight:600}
+
+/* ---------- layout ---------- */
+.panel{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:18px;margin-top:16px}
+.panel > h3{font-size:14.5px;margin-bottom:2px}
+.panel .cap{color:var(--muted);font-size:12.5px;margin-bottom:14px}
+.row{display:grid;gap:16px}
+@media(min-width:900px){
+  .row.two{grid-template-columns:1fr 1fr}
+  .row.side{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
+  .row.rev{grid-template-columns:minmax(0,340px) minmax(0,1fr)}
+}
+.screentitle{margin-top:26px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.screentitle h2{font-size:19px}
+.screentitle .why{color:var(--muted);font-size:12.5px}
+.hidden{display:none}
+
+/* ---------- stat tiles ---------- */
+.tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(148px,1fr))}
+.tile{background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:12px 13px}
+.tile .k{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:23px;font-weight:650;margin-top:3px;letter-spacing:-0.02em}
+.tile .n{font-size:11.5px;color:var(--ink2);margin-top:2px}
+.tile .n.good{color:var(--ok-text);font-weight:600}
+.tile.hero{background:color-mix(in srgb,var(--series-1) 8%,var(--surface-1));
+  border-color:color-mix(in srgb,var(--series-1) 32%,transparent)}
+
+/* ---------- controls ---------- */
+.drop{border:1.5px dashed var(--axis);border-radius:10px;padding:22px;text-align:center;color:var(--muted);
+  background:var(--surface-2)}
+.drop strong{color:var(--ink);display:block;font-size:14px;margin-bottom:3px}
+.filecard{display:flex;gap:12px;align-items:center;border:1px solid var(--border);border-radius:10px;
+  padding:11px 13px;margin-top:12px;background:var(--surface-2)}
+.filecard .ico{width:32px;height:32px;border-radius:7px;background:var(--series-1);color:#fff;
+  display:grid;place-items:center;font-size:10px;font-weight:700;flex:none}
+.filecard .meta{font-size:12px;color:var(--muted)}
+.chlist{margin-top:14px;display:flex;flex-direction:column;gap:7px}
+.ch{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:9px;padding:9px 11px;
+  cursor:pointer;background:var(--surface-1)}
+.ch[data-on="1"]{border-color:color-mix(in srgb,var(--series-1) 50%,transparent);
+  background:color-mix(in srgb,var(--series-1) 7%,var(--surface-1))}
+.ch[data-off="1"]{opacity:.45;cursor:not-allowed}
+.ch .box{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--axis);flex:none;
+  display:grid;place-items:center;font-size:10px;color:#fff}
+.ch[data-on="1"] .box{background:var(--series-1);border-color:var(--series-1)}
+.ch .nm{font-weight:550;font-size:13px}
+.ch .hz{color:var(--muted);font-size:11.5px}
+.ch .tag{margin-left:auto;font-size:10.5px;padding:2px 7px;border-radius:999px;border:1px solid var(--border);color:var(--ink2)}
+.note{display:flex;gap:9px;font-size:12.5px;border-radius:9px;padding:10px 12px;margin-top:12px;
+  background:var(--surface-2);border:1px solid var(--border);color:var(--ink2)}
+.note .m{flex:none;font-weight:700}
+.note.warn{border-color:color-mix(in srgb,var(--warning) 55%,transparent);
+  background:color-mix(in srgb,var(--warning) 12%,var(--surface-1))}
+.note.warn .m{color:#8a5c00}
+:root[data-theme="dark"] .note.warn .m{color:var(--warning)}
+.seg{display:flex;gap:0;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-top:8px}
+.seg button{flex:1;background:var(--surface-1);border:0;border-right:1px solid var(--border);
+  padding:9px 6px;font:inherit;font-size:12.5px;color:var(--ink2);cursor:pointer;text-align:center}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--series-1);color:#fff;font-weight:600}
+label.fld{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;
+  margin-top:16px;margin-bottom:5px}
+input[type=range]{width:100%;accent-color:var(--series-1)}
+.cta{width:100%;margin-top:18px;background:var(--series-1);color:#fff;border:0;border-radius:9px;
+  padding:12px;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--grid);font-size:13px}
+.kv:last-child{border-bottom:0}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{font-weight:550;font-variant-numeric:tabular-nums}
+
+/* ---------- legend / chart chrome ---------- */
+.legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--ink2);margin-bottom:8px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px}
+.legend .ln{width:14px;height:2px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:3px}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.tick{font-size:10.5px;fill:var(--muted)}
+.axlbl{font-size:11px;fill:var(--muted)}
+.dlbl{font-size:11px;fill:var(--ink2);font-weight:600}
+
+/* ---------- review queue ---------- */
+.queue{border:1px solid var(--border);border-radius:10px;max-height:418px;overflow-y:auto;
+  -webkit-mask-image:linear-gradient(#000 calc(100% - 26px),transparent);
+  mask-image:linear-gradient(#000 calc(100% - 26px),transparent)}
+.qrow{display:flex;align-items:center;gap:9px;padding:9px 11px;border-bottom:1px solid var(--grid);cursor:pointer;font-size:12.5px}
+.qrow:hover{background:var(--surface-2)}
+.qrow[aria-current="true"]{background:color-mix(in srgb,var(--series-1) 10%,var(--surface-1));
+  box-shadow:inset 2px 0 0 var(--series-1)}
+.qrow .ep{font-variant-numeric:tabular-nums;color:var(--muted);width:52px;flex:none}
+.qrow .st{font-weight:600;width:34px;flex:none}
+.qrow .cf{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.qrow .flag{width:7px;height:7px;border-radius:50%;flex:none}
+.probs{display:flex;flex-direction:column;gap:6px;margin-top:4px;max-width:330px}
+.prob{display:grid;grid-template-columns:36px 1fr 44px;align-items:center;gap:9px;font-size:12.5px}
+.prob .bar{height:14px;border-radius:0 4px 4px 0;background:var(--seq-200)}
+.prob.top .bar{background:var(--series-1)}
+.prob .pv{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.acts button{border:1px solid var(--border);background:var(--surface-1);border-radius:8px;padding:9px 14px;
+  font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
+.acts button.pri{background:var(--series-1);border-color:var(--series-1);color:#fff;font-weight:600}
+.stagepick{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.stagepick button{border:1px solid var(--border);background:var(--surface-1);border-radius:7px;
+  padding:6px 12px;font:inherit;font-size:12.5px;cursor:pointer;color:var(--ink2)}
+.stagepick button:hover{border-color:var(--series-1);color:var(--ink)}
+
+/* ---------- table ---------- */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:right;padding:7px 9px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left;font-variant-numeric:normal}
+th{color:var(--muted);font-weight:550;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em}
+tr.us td{font-weight:650}
+tr.us td:first-child::after{content:" ●";color:var(--series-1)}
+details{margin-top:12px}
+summary{cursor:pointer;font-size:12.5px;color:var(--ink2)}
+.mini{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.55}
+.mini b{color:var(--ink2);font-weight:600}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+  border:1px solid var(--border);color:var(--ink2);margin-right:5px}
+</style>
+</head>
+<body class="viz-root">
+
+<header>
+  <div class="hbar">
+    <div class="logo"><span class="dot">M</span> Morfeo</div>
+    <div class="sub">Estadificación asistida del sueño · PSG / Sleep-EDFx</div>
+    <div class="spacer"></div>
+    <span class="badge mock">MAQUETA — datos simulados</span>
+    <button class="iconbtn" id="theme">Modo oscuro</button>
+  </div>
+  <nav id="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-t="t1">1 · Cargue y montaje</button>
+    <button role="tab" aria-selected="false" data-t="t2">2 · Resultados de la noche</button>
+    <button role="tab" aria-selected="false" data-t="t3">3 · Cola de revisión</button>
+    <button role="tab" aria-selected="false" data-t="t4">4 · Desempeño del modelo</button>
+    <button role="tab" aria-selected="false" data-t="t5">5 · Cohorte (descriptivo)</button>
+  </nav>
+</header>
+
+<div class="wrap">
+
+<!-- ============ 1 · CARGUE Y MONTAJE ============ -->
+<section id="t1">
+  <div class="screentitle">
+    <h2>Cargue y configuración del montaje</h2>
+    <span class="why">Responde: <b>¿con qué señales cuento esta noche y cuánto desempeño puedo esperar de ellas?</b></span>
+  </div>
+
+  <div class="row side">
+    <div>
+      <div class="panel">
+        <h3>Cargar registro de polisomnografía</h3>
+        <p class="cap">Formato EDF/EDF+. Opcionalmente el hipnograma del experto para comparar.</p>
+        <div class="drop"><strong>Arrastre el archivo .edf aquí</strong>o seleccione desde el equipo · máx. 500 MB</div>
+        <div class="filecard">
+          <div class="ico">EDF</div>
+          <div>
+            <div style="font-weight:600">SC4001E0-PSG.edf</div>
+            <div class="meta">8 h 05 min · 970 épocas de 30 s · sujeto 1, noche 1</div>
+          </div>
+          <div class="spacer"></div>
+          <span class="pill">Hipnograma cargado</span>
+        </div>
+
+        <label class="fld">Canales detectados en el archivo</label>
+        <div class="chlist" id="chans">
+          <div class="ch" data-on="1" data-ch="eeg1"><span class="box">✓</span>
+            <span><span class="nm">EEG Fpz-Cz</span> <span class="hz">· 100 Hz</span></span>
+            <span class="tag">EEG</span></div>
+          <div class="ch" data-on="1" data-ch="eeg2"><span class="box">✓</span>
+            <span><span class="nm">EEG Pz-Oz</span> <span class="hz">· 100 Hz</span></span>
+            <span class="tag">EEG</span></div>
+          <div class="ch" data-on="0" data-ch="eog"><span class="box"></span>
+            <span><span class="nm">EOG horizontal</span> <span class="hz">· 100 Hz</span></span>
+            <span class="tag">EOG</span></div>
+          <div class="ch" data-on="0" data-ch="emg"><span class="box"></span>
+            <span><span class="nm">EMG submentoniano</span> <span class="hz">· 1 Hz</span></span>
+            <span class="tag">EMG</span></div>
+          <div class="ch" data-off="1"><span class="box"></span>
+            <span><span class="nm">Resp. oro-nasal · Temp. rectal</span> <span class="hz">· 1 Hz</span></span>
+            <span class="tag">no usado</span></div>
+        </div>
+
+        <div class="note warn"><span class="m">!</span><span>
+          El EMG del subconjunto <b>Sleep Cassette</b> viene muestreado a <b>1 Hz</b> (envolvente, no EMG crudo),
+          por lo que aporta poco a la separación de REM. En <b>Sleep Telemetry</b> sí está a 100 Hz.
+          Esta restricción hay que verificarla canal por canal antes de prometerla en el producto.</span></div>
+
+        <div class="note"><span class="m">i</span><span>
+          Regla de validación del despliegue: <b>se exige al menos un canal de EEG</b>.
+          Cualquier combinación válida sobre esa base queda habilitada.</span></div>
+      </div>
+
+      <div class="panel">
+        <h3>Modelo y umbral de revisión</h3>
+        <p class="cap">El modelo se sirve por API; el umbral define cuántas épocas pasan a revisión humana.</p>
+        <label class="fld">Modelo</label>
+        <div class="seg" id="modelseg">
+          <button aria-pressed="false">Línea base · LightGBM</button>
+          <button aria-pressed="true">CNN-1D</button>
+          <button aria-pressed="false">TinySleepNet</button>
+        </div>
+        <label class="fld">Enviar a revisión las épocas con confianza menor a <b id="thrv" style="color:var(--ink)">0,70</b></label>
+        <input type="range" min="50" max="95" value="70" id="thr">
+        <div class="kv"><span>Épocas que pasarían a revisión</span><span id="flagn">118 de 970 (12,2 %)</span></div>
+        <div class="kv"><span>Versión del modelo</span><span>cnn1d-v0.3 · run MLflow a41c9e</span></div>
+        <div class="kv"><span>Versión de datos</span><span>DVC 7f2b41d · sleep-edfx SC</span></div>
+        <button class="cta">Estadificar noche →</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h3>Montaje seleccionado</h3>
+        <p class="cap">Desempeño esperado según la evaluación por sujeto ya realizada para esta combinación.</p>
+        <div class="tiles" style="grid-template-columns:1fr 1fr">
+          <div class="tile hero"><div class="k">F1-macro esperado</div><div class="v" id="mF1">0,79</div>
+            <div class="n">2 canales EEG</div></div>
+          <div class="tile"><div class="k">Épocas a revisar</div><div class="v" id="mRev">12 %</div>
+            <div class="n">≈ 23 min de revisión</div></div>
+        </div>
+        <div class="mini">El usuario ve el costo de su montaje <b>antes</b> de correr el modelo. Es el puente
+          entre lo descriptivo y lo predictivo: la comparación de montajes es un resultado del proyecto,
+          no un adorno.</div>
+      </div>
+
+      <div class="panel">
+        <h3>F1-macro por combinación de señales</h3>
+        <p class="cap">Evaluación con partición por sujeto. Valores ilustrativos de la maqueta.</p>
+        <div id="c-montage"></div>
+        <details><summary>Ver tabla</summary>
+          <table><thead><tr><th>Montaje</th><th>F1-macro</th><th>Exactitud</th></tr></thead>
+          <tbody id="tb-montage"></tbody></table></details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2 · RESULTADOS ============ -->
+<section id="t2" class="hidden">
+  <div class="screentitle">
+    <h2>Resultados de la noche</h2>
+    <span class="why">Responde: <b>¿cómo durmió el paciente y en qué partes de la noche no me puedo fiar del modelo?</b></span>
+  </div>
+
+  <div class="tiles" style="margin-top:16px">
+    <div class="tile"><div class="k">Tiempo total de sueño</div><div class="v">6 h 42</div><div class="n">de 8 h 05 en cama</div></div>
+    <div class="tile"><div class="k">Eficiencia del sueño</div><div class="v">82,9 %</div><div class="n">rango típico 85–95 %</div></div>
+    <div class="tile"><div class="k">Latencia a N1</div><div class="v">12 min</div><div class="n">latencia REM 78 min</div></div>
+    <div class="tile"><div class="k">WASO</div><div class="v">54 min</div><div class="n">14 despertares</div></div>
+    <div class="tile"><div class="k">Épocas marcadas</div><div class="v">118</div><div class="n">12,2 % de la noche</div></div>
+    <div class="tile hero"><div class="k">Tiempo de revisión</div><div class="v">23 min</div>
+      <div class="n good">↓ 83 % frente a 2 h 15 manual</div></div>
+  </div>
+
+  <div class="panel">
+    <h3>Hipnograma de la noche</h3>
+    <p class="cap">Predicción del modelo frente a la anotación del experto, época por época (30 s).</p>
+    <div class="legend">
+      <span><i class="ln" style="background:var(--series-1)"></i>Modelo</span>
+      <span><i class="ln" style="background:var(--series-2)"></i>Experto (referencia)</span>
+      <span style="color:var(--muted)">· Acuerdo 87,4 % · κ de Cohen 0,81</span>
+    </div>
+    <div id="c-hypno"></div>
+    <div class="legend" style="margin-top:14px">
+      <span style="font-weight:600;color:var(--ink)">Incertidumbre del modelo</span>
+      <span><i style="background:var(--seq-100)"></i>baja</span>
+      <span><i style="background:var(--seq-400)"></i>media</span>
+      <span><i style="background:var(--seq-700)"></i>alta</span>
+      <span><i style="background:var(--critical);border-radius:50%"></i>▲ marcada para revisión</span>
+    </div>
+    <div id="c-unc"></div>
+    <div class="mini">Las bandas oscuras se concentran en las transiciones y en N1 — exactamente donde también
+      discrepan los expertos entre sí. Ese es el argumento de producto: <b>el modelo no reemplaza al técnico,
+      le dice dónde mirar</b>.</div>
+  </div>
+
+  <div class="row two">
+    <div class="panel">
+      <h3>Distribución por estadio</h3>
+      <p class="cap">Porcentaje del tiempo total de registro asignado a cada estadio.</p>
+      <div id="c-dist"></div>
+    </div>
+    <div class="panel">
+      <h3>Concordancia por estadio</h3>
+      <p class="cap">Épocas en las que modelo y experto coinciden, sobre el total anotado por el experto.</p>
+      <div id="c-agree"></div>
+      <div class="mini">N1 es el punto débil, como en toda la literatura de <i>sleep staging</i>. El producto
+        lo asume: las épocas N1 dudosas son las primeras de la cola de revisión.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Informe y exportación</h3>
+    <p class="cap">Salidas que el técnico entrega al médico tratante.</p>
+    <div class="acts">
+      <button class="pri">Exportar hipnograma (CSV)</button>
+      <button>Informe PDF de arquitectura del sueño</button>
+      <button>Anotaciones en formato EDF+</button>
+      <button>Enviar a revisión →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3 · COLA DE REVISIÓN ============ -->
+<section id="t3" class="hidden">
+  <div class="screentitle">
+    <h2>Cola de revisión época por época</h2>
+    <span class="why">Responde: <b>¿cómo reviso solo el 12 % dudoso en vez de las 970 épocas?</b> Aquí es donde el producto genera el ahorro.</span>
+  </div>
+
+  <div class="row rev">
+    <div class="panel" style="margin-top:16px">
+      <h3>118 épocas marcadas</h3>
+      <p class="cap">Ordenadas por incertidumbre descendente.</p>
+      <div class="queue" id="queue"></div>
+      <div class="kv" style="margin-top:12px"><span>Revisadas</span><span>42 de 118</span></div>
+      <div class="kv"><span>Corregidas</span><span>9 (21 % de las revisadas)</span></div>
+      <div class="mini">Cada corrección queda registrada con usuario y fecha. Ese registro es el
+        insumo de reentrenamiento y la evidencia de trazabilidad clínica.</div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <h3 id="epTitle">Época 0412 · 02:26:00 – 02:26:30</h3>
+      <p class="cap" id="epCap">Predicción del modelo: <b>N1</b> · confianza 0,41 · contexto N2 → ? → N2</p>
+      <div class="legend">
+        <span><i class="ln" style="background:var(--series-1)"></i>EEG Fpz-Cz</span>
+        <span><i class="ln" style="background:var(--series-2)"></i>EEG Pz-Oz</span>
+        <span style="color:var(--muted)">ventana de 30 s · 100 Hz</span>
+      </div>
+      <div id="c-signal"></div>
+
+      <div class="row two" style="margin-top:16px">
+        <div>
+          <h4 style="font-size:13px;margin-bottom:8px">Probabilidad por clase</h4>
+          <div class="probs" id="probs"></div>
+        </div>
+        <div>
+          <h4 style="font-size:13px;margin-bottom:8px">Contexto (± 5 épocas)</h4>
+          <div id="c-ctx"></div>
+          <div class="mini">La regla AASM se lee en secuencia, no en aislamiento. Mostrar el contexto
+            es lo que hace que el técnico pueda decidir en segundos.</div>
+        </div>
+      </div>
+
+      <div class="acts">
+        <button class="pri">Aceptar N1 y continuar</button>
+        <button>Corregir a…</button>
+        <button>Marcar como artefacto (M)</button>
+        <button>Saltar</button>
+      </div>
+      <div class="stagepick">
+        <button>W</button><button>N1</button><button>N2</button><button>N3</button><button>REM</button><button>M</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4 · DESEMPEÑO ============ -->
+<section id="t4" class="hidden">
+  <div class="screentitle">
+    <h2>Desempeño del modelo</h2>
+    <span class="why">Responde: <b>¿puedo confiar en esta versión y cómo se compara con lo publicado?</b></span>
+  </div>
+
+  <div class="row side">
+    <div class="panel">
+      <h3>Matriz de confusión</h3>
+      <p class="cap">Normalizada por fila (recall). Partición por sujeto, conjunto de prueba retenido.</p>
+      <div id="c-cm"></div>
+    </div>
+    <div>
+      <div class="panel">
+        <h3>F1 por clase</h3>
+        <p class="cap">La métrica principal es F1-macro, no exactitud.</p>
+        <div id="c-f1"></div>
+      </div>
+      <div class="panel">
+        <h3>Ficha del modelo</h3>
+        <div class="kv"><span>Versión</span><span>cnn1d-v0.3</span></div>
+        <div class="kv"><span>Run de MLflow</span><span>a41c9e</span></div>
+        <div class="kv"><span>Datos (DVC)</span><span>7f2b41d</span></div>
+        <div class="kv"><span>Partición</span><span>por sujeto (sin fuga)</span></div>
+        <div class="kv"><span>Entrada</span><span>EEG Fpz-Cz + Pz-Oz</span></div>
+        <div class="kv"><span>F1-macro / κ</span><span>0,79 / 0,80</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Referencia de la literatura sobre Sleep-EDF</h3>
+    <p class="cap">Resultados publicados con EEG Fpz-Cz de canal único. Nuestra cifra es la meta de la maqueta,
+      todavía no un resultado.</p>
+    <div class="legend">
+      <span><i style="background:var(--series-1)"></i>Exactitud global (%)</span>
+      <span><i style="background:var(--series-2)"></i>F1-macro (%)</span>
+    </div>
+    <div id="c-lit"></div>
+    <details open><summary>Ver tabla</summary>
+      <table><thead><tr><th>Modelo</th><th>Exactitud</th><th>F1-macro</th><th>κ</th></tr></thead>
+      <tbody>
+        <tr><td>DeepSleepNet (2017)</td><td>82,0</td><td>76,9</td><td>0,76</td></tr>
+        <tr><td>Joint Classification &amp; Prediction (2019)</td><td>81,9</td><td>73,8</td><td>—</td></tr>
+        <tr><td>SleepEEGNet (2019)</td><td>84,3</td><td>79,7</td><td>0,79</td></tr>
+        <tr><td>ZleepAnlystNet (2024)</td><td>87,0</td><td>82,1</td><td>0,82</td></tr>
+        <tr class="us"><td>Morfeo cnn1d-v0.3 (meta)</td><td>84,0</td><td>79,0</td><td>0,80</td></tr>
+      </tbody></table></details>
+  </div>
+</section>
+
+<!-- ============ 5 · COHORTE ============ -->
+<section id="t5" class="hidden">
+  <div class="screentitle">
+    <h2>Exploración de la cohorte</h2>
+    <span class="why">Cubre el requisito <b>descriptivo</b> del curso: entender los datos antes de modelar.</span>
+  </div>
+
+  <div class="tiles" style="margin-top:16px">
+    <div class="tile"><div class="k">Registros PSG</div><div class="v">197</div><div class="n">153 SC + 44 ST</div></div>
+    <div class="tile"><div class="k">Tamaño</div><div class="v">8,1 GB</div><div class="n">PhysioNet, acceso abierto</div></div>
+    <div class="tile"><div class="k">Edades (SC)</div><div class="v">25–101</div><div class="n">sujetos sanos, sin medicación</div></div>
+    <div class="tile"><div class="k">Canales por registro</div><div class="v">4</div><div class="n">2 EEG + EOG + EMG</div></div>
+    <div class="tile"><div class="k">Frecuencia EEG/EOG</div><div class="v">100 Hz</div><div class="n">3.000 muestras por época</div></div>
+    <div class="tile"><div class="k">Etiquetas</div><div class="v">R&amp;K</div><div class="n">W, R, 1, 2, 3, 4, M, ?</div></div>
+  </div>
+
+  <div class="row side">
+    <div class="panel">
+      <h3>Desbalance de clases</h3>
+      <p class="cap">Distribución de épocas de 30 s en Sleep-EDF. Cifras reportadas en la literatura para el
+        subconjunto de 20 sujetos (42.308 épocas).</p>
+      <div id="c-imb"></div>
+      <div class="note warn"><span class="m">!</span><span>
+        <b>N1 es solo el 6,6 %</b> de las épocas y N2 el 42,1 %. Un clasificador que nunca prediga N1
+        todavía alcanza ~93 % de exactitud. Por eso la métrica de decisión del proyecto es
+        <b>F1-macro</b>, y la maqueta muestra F1 por clase en todas partes.</span></div>
+    </div>
+    <div class="panel">
+      <h3>Decisiones de preprocesamiento a documentar</h3>
+      <p class="cap">Cada una cambia las cifras que se reportan. Hay que fijarlas y versionarlas.</p>
+      <div class="kv"><span>Épocas «?» sin clasificar</span><span>excluir</span></div>
+      <div class="kv"><span>Estadios 3 y 4 (R&amp;K)</span><span>fusionar en N3</span></div>
+      <div class="kv"><span>Clase M (movimiento)</span><span>¿6.ª clase o descarte?</span></div>
+      <div class="kv"><span>Vigilia extensa antes/después</span><span>recortar a ±30 min</span></div>
+      <div class="kv"><span>Partición</span><span>por sujeto, no por época</span></div>
+      <div class="kv"><span>Subconjunto</span><span>SC · ST · ambos</span></div>
+      <div class="mini">Las tres primeras son las que más mueven los números y la razón por la que dos
+        artículos sobre «el mismo dataset» no siempre son comparables. Conviene fijarlas explícitamente
+        en el reporte de la entrega 1.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Composición del sueño por rango de edad</h3>
+    <p class="cap">Vista descriptiva que el prototipo ofrece al usuario como referencia normativa.
+      Valores ilustrativos de la maqueta.</p>
+    <div id="c-age"></div>
+  </div>
+</section>
+
+<div class="panel" style="margin-top:28px;background:var(--surface-2)">
+  <h3>Cómo se conecta con la arquitectura de despliegue</h3>
+  <p class="cap">Los tres contenedores que exige el curso, mapeados a lo que se ve arriba.</p>
+  <div class="row two">
+    <div>
+      <div class="kv"><span>Contenedor 1 · Tablero</span><span>pantallas 1–5</span></div>
+      <div class="kv"><span>Contenedor 2 · API de inferencia</span><span>POST /predict y /predict/batch</span></div>
+      <div class="kv"><span>Contenedor 3 · MLflow + registro</span><span>versión y métricas del modelo</span></div>
+      <div class="kv"><span>DVC</span><span>Sleep-EDFx versionado, no en Git</span></div>
+    </div>
+    <div class="mini" style="margin-top:0">
+      El contrato de la API sale directamente de la pantalla 1: recibe la señal de las épocas más la
+      <b>lista de canales</b>, y devuelve estadio, vector de probabilidades y confianza por época.
+      Esa lista de canales variable es el requisito del IBIO y también la decisión de diseño más importante
+      del modelo — o se entrena un modelo por montaje, o uno solo con enmascaramiento de canales.
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* ================= helpers ================= */
+const S=(t,a={})=>{const e=document.createElementNS("http://www.w3.org/2000/svg",t);
+  for(const k in a)e.setAttribute(k,a[k]);return e};
+const svg=(w,h)=>{const e=S("svg",{viewBox:`0 0 ${w} ${h}`,role:"img"});return e};
+const CV=n=>getComputedStyle(document.body).getPropertyValue(n).trim();
+const nf=(v,d=1)=>v.toFixed(d).replace(".",",");
+const charts=[];
+function reg(fn){charts.push(fn);fn();}
+function redrawAll(){charts.forEach(f=>f());}
+
+/* ================= data ================= */
+const STAGES=["W","REM","N1","N2","N3"];          // display order, top→bottom
+const SEQ=["--seq-100","--seq-200","--seq-300","--seq-400","--seq-500","--seq-600","--seq-700"];
+
+// synthetic full-night hypnogram: 4 NREM/REM cycles
+const N_EP=970, N_FLAG=118;                        // 8 h 05 min de registro
+const HYP=(()=>{const a=[];const push=(s,n)=>{for(let i=0;i<n;i++)a.push(s)};
+  push(0,24); push(2,6); push(3,34); push(4,26); push(3,18); push(2,3); push(1,14); push(0,2);
+  push(2,4); push(3,30); push(4,22); push(3,20); push(1,20); push(0,3);
+  push(2,5); push(3,36); push(4,12); push(3,24); push(1,26); push(0,4);
+  push(2,4); push(3,32); push(3,10); push(1,30); push(0,5);
+  push(2,3); push(3,24); push(1,22); push(0,14);
+  while(a.length<560)a.push(0);
+  return Array.from({length:N_EP},(_,i)=>a[Math.min(559,Math.floor(i*560/N_EP))]);})();
+const EXP=HYP.map((v,i)=>{const r=Math.sin(i*12.9898)*43758.5453;const f=r-Math.floor(r);
+  if(f<0.08)return v===2?3:(v===3?2:(v===1?2:v)); return v});
+const UNC=HYP.map((v,i)=>{const r=Math.sin(i*78.233)*43758.5453;let f=r-Math.floor(r);
+  let base=v===2?0.62:(v===1?0.30:(v===0?0.16:(v===3?0.20:0.18)));
+  if(i>0&&HYP[i-1]!==v)base+=0.30; return Math.min(0.97,Math.max(0.03,base*0.72+f*0.34))});
+const FLAG_T=[...UNC].sort((a,b)=>b-a)[N_FLAG-1];   // umbral que marca exactamente N_FLAG épocas
+
+/* ================= 1 · montage bars ================= */
+const MONT=[
+  ["1 EEG (Fpz-Cz)",0.742,0.812],["1 EEG (Pz-Oz)",0.718,0.795],
+  ["1 EEG + EOG",0.771,0.831],["1 EEG + EMG",0.749,0.817],
+  ["2 EEG",0.790,0.845],["2 EEG + EOG",0.812,0.861],["2 EEG + EOG + EMG",0.818,0.864]];
+reg(function montage(){
+  // Dot plot: las diferencias son pequeñas (0,72–0,82); una barra truncada las exageraría.
+  const W=520,rh=30,H=MONT.length*rh+34,lw=148,pw=W-lw-52,lo=0.70,hi=0.84;
+  const s=svg(W,H); s.setAttribute("aria-label","F1-macro por montaje");
+  const x=v=>lw+((v-lo)/(hi-lo))*pw;
+  [0.70,0.74,0.78,0.82].forEach(t=>{
+    s.appendChild(S("line",{x1:x(t),x2:x(t),y1:4,y2:MONT.length*rh+4,stroke:CV("--grid")}));
+    s.appendChild(Object.assign(S("text",{x:x(t),y:H-6,"text-anchor":"middle","class":"tick"}),
+      {textContent:nf(t,2)}));});
+  MONT.forEach((m,i)=>{const y=i*rh+18;
+    s.appendChild(Object.assign(S("text",{x:lw-10,y:y+4,"text-anchor":"end","class":"tick"}),{textContent:m[0]}));
+    s.appendChild(S("line",{x1:x(lo),x2:x(m[1]),y1:y,y2:y,stroke:CV("--grid"),"stroke-width":2}));
+    s.appendChild(S("circle",{cx:x(m[1]),cy:y,r:i===4?6:5,fill:CV("--series-1"),
+      stroke:CV("--surface-1"),"stroke-width":2}));
+    s.appendChild(Object.assign(S("text",{x:lw+pw+10,y:y+4,"class":"dlbl"}),{textContent:nf(m[1],3)}));});
+  const el=document.getElementById("c-montage"); el.replaceChildren(s);
+  document.getElementById("tb-montage").replaceChildren(...MONT.map(m=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${m[0]}</td><td>${nf(m[1],3)}</td><td>${nf(m[2]*100,1)} %</td>`;return tr;}));
+});
+
+/* ================= 2 · hypnogram ================= */
+reg(function hypno(){
+  const W=1000,H=190,L=40,R=8,T=10,B=26,pw=W-L-R,ph=H-T-B,n=HYP.length;
+  const s=svg(W,H); s.setAttribute("aria-label","Hipnograma de la noche");
+  const y=v=>T+(v+0.5)*(ph/5), x=i=>L+i*(pw/n);
+  STAGES.forEach((st,v)=>{
+    s.appendChild(S("line",{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:CV("--grid"),"stroke-width":1}));
+    s.appendChild(Object.assign(S("text",{x:L-9,y:y(v)+4,"text-anchor":"end","class":"tick"}),{textContent:st}));});
+  const path=a=>{let d="";a.forEach((v,i)=>{d+=(i?`L${x(i).toFixed(1)} ${y(a[i-1]).toFixed(1)}L`:"M")+
+    `${x(i).toFixed(1)} ${y(v).toFixed(1)}`;});return d+`L${x(n).toFixed(1)} ${y(a[n-1]).toFixed(1)}`};
+  // Se desplaza el trazo del modelo 3,5 px para que ambas series sean visibles como pistas paralelas;
+  // donde se separan verticalmente, hay desacuerdo.
+  s.appendChild(S("g",{transform:"translate(0,-2)"})).appendChild(
+    S("path",{d:path(EXP),fill:"none",stroke:CV("--series-2"),"stroke-width":2,"stroke-linejoin":"round"}));
+  s.appendChild(S("g",{transform:"translate(0,2.5)"})).appendChild(
+    S("path",{d:path(HYP),fill:"none",stroke:CV("--series-1"),"stroke-width":2,"stroke-linejoin":"round"}));
+  for(let h=0;h<=8;h++){const i=Math.round(h*n/8);if(i>n)break;
+    s.appendChild(Object.assign(S("text",{x:x(i),y:H-8,"text-anchor":"middle","class":"tick"}),
+      {textContent:String((23+h)%24).padStart(2,"0")+":00"}));}
+  s.appendChild(Object.assign(S("text",{x:L,y:H-8,"class":"axlbl",opacity:0}),{textContent:""}));
+  document.getElementById("c-hypno").replaceChildren(s);
+});
+
+/* ================= 2 · uncertainty strip ================= */
+reg(function unc(){
+  const W=1000,H=54,L=40,R=8,n=UNC.length,bw=(W-L-R)/n;
+  const s=svg(W,H); s.setAttribute("aria-label","Incertidumbre del modelo por época");
+  s.appendChild(Object.assign(S("text",{x:L-9,y:24,"text-anchor":"end","class":"tick"}),{textContent:"σ"}));
+  UNC.forEach((u,i)=>{const step=SEQ[Math.min(6,Math.floor(u*7))];
+    s.appendChild(S("rect",{x:L+i*bw,y:8,width:Math.max(bw,0.9),height:22,fill:CV(step)}));
+    if(u>=FLAG_T){const cx=L+i*bw+bw/2;
+      s.appendChild(S("path",{d:`M${cx} 33L${cx-2.6} 38.5L${cx+2.6} 38.5Z`,fill:CV("--critical")}));}});
+  s.appendChild(Object.assign(S("text",{x:L,y:51,"class":"axlbl"}),
+    {textContent:`▲ ${N_FLAG} épocas sobre el umbral de revisión (confianza < 0,70) de ${N_EP.toLocaleString("es-CO")} en total`}));
+  document.getElementById("c-unc").replaceChildren(s);
+});
+
+/* ================= 2 · stage distribution ================= */
+const DIST=[["W",17.5],["REM",18.9],["N1",5.8],["N2",41.6],["N3",16.2]];
+reg(function dist(){
+  const W=460,H=210,L=34,B=34,T=14,pw=W-L-10,ph=H-T-B,mx=45;
+  const s=svg(W,H); s.setAttribute("aria-label","Distribución por estadio");
+  [0,15,30,45].forEach(t=>{const y=T+ph-(t/mx)*ph;
+    s.appendChild(S("line",{x1:L,x2:W-10,y1:y,y2:y,stroke:CV("--grid")}));
+    s.appendChild(Object.assign(S("text",{x:L-8,y:y+4,"text-anchor":"end","class":"tick"}),{textContent:t+"%"}));});
+  const bw=pw/DIST.length;
+  DIST.forEach((d,i)=>{const h=(d[1]/mx)*ph,x=L+i*bw+6;
+    s.appendChild(S("rect",{x,y:T+ph-h,width:bw-12,height:h,rx:4,fill:CV("--series-1")}));
+    s.appendChild(S("rect",{x,y:T+ph-4,width:bw-12,height:4,fill:CV("--series-1")}));
+    s.appendChild(Object.assign(S("text",{x:x+(bw-12)/2,y:T+ph-h-6,"text-anchor":"middle","class":"dlbl"}),
+      {textContent:nf(d[1])+" %"}));
+    s.appendChild(Object.assign(S("text",{x:x+(bw-12)/2,y:H-12,"text-anchor":"middle","class":"tick"}),
+      {textContent:d[0]}));});
+  s.appendChild(S("line",{x1:L,x2:W-10,y1:T+ph,y2:T+ph,stroke:CV("--axis")}));
+  document.getElementById("c-dist").replaceChildren(s);
+});
+
+/* ================= 2 · agreement ================= */
+const AGR=[["W",94.1],["REM",88.6],["N1",47.3],["N2",91.2],["N3",86.4]];
+reg(function agree(){
+  const W=460,rh=32,H=AGR.length*rh+14,lw=44,bw=W-lw-56;
+  const s=svg(W,H); s.setAttribute("aria-label","Concordancia por estadio");
+  AGR.forEach((a,i)=>{const y=i*rh+8;
+    s.appendChild(Object.assign(S("text",{x:lw-10,y:y+16,"text-anchor":"end","class":"tick"}),{textContent:a[0]}));
+    s.appendChild(S("rect",{x:lw,y:y+4,width:bw,height:17,rx:4,fill:CV("--grid")}));
+    s.appendChild(S("rect",{x:lw,y:y+4,width:bw*(a[1]/100),height:17,rx:4,fill:CV("--series-1")}));
+    s.appendChild(Object.assign(S("text",{x:lw+bw+8,y:y+17,"class":"dlbl"}),{textContent:nf(a[1])+" %"}));
+    if(a[0]==="N1")s.appendChild(S("rect",{x:lw-2,y:y+2,width:bw*(a[1]/100)+4,height:21,rx:6,fill:"none",
+      stroke:CV("--critical"),"stroke-width":1.6,"stroke-dasharray":"4 3"}));});
+  document.getElementById("c-agree").replaceChildren(s);
+});
+
+/* ================= 3 · review queue ================= */
+const Q=[[412,"02:26:00","N1",.41],[688,"04:04:00","N1",.43],[121,"00:50:30","W",.46],
+  [455,"02:47:30","REM",.48],[733,"04:26:30","N1",.49],[302,"01:31:00","N2",.52],
+  [519,"03:19:30","N1",.54],[867,"05:33:30","REM",.55],[196,"01:08:00","N2",.57],
+  [640,"03:50:00","N3",.59],[051,"00:25:30","W",.61],[771,"04:45:30","N1",.63],
+  [388,"02:14:00","N2",.65],[905,"05:52:30","REM",.67],[233,"01:26:30","N1",.68]];
+reg(function queue(){
+  const el=document.getElementById("queue");
+  el.replaceChildren(...Q.map((q,i)=>{
+    const d=document.createElement("div"); d.className="qrow";
+    if(i===0)d.setAttribute("aria-current","true");
+    const col=q[3]<.5?"--critical":(q[3]<.6?"--serious":"--warning");
+    d.innerHTML=`<span class="flag" style="background:${CV(col)}"></span>
+      <span class="ep">#${String(q[0]).padStart(4,"0")}</span>
+      <span>${q[1]}</span><span class="st">${q[2]}</span>
+      <span class="cf">${nf(q[3],2)}</span>`;
+    d.onclick=()=>{[...el.children].forEach(c=>c.removeAttribute("aria-current"));
+      d.setAttribute("aria-current","true");
+      document.getElementById("epTitle").textContent=
+        `Época ${String(q[0]).padStart(4,"0")} · ${q[1]} – ${q[1].slice(0,6)}${q[1].slice(6)==="00"?"30":"00"}`;
+      document.getElementById("epCap").innerHTML=
+        `Predicción del modelo: <b>${q[2]}</b> · confianza ${nf(q[3],2)} · contexto N2 → ? → N2`;};
+    return d;}));
+});
+
+/* ================= 3 · signal viewer ================= */
+reg(function signal(){
+  const W=620,H=150,L=8,R=8,rows=2,rh=(H-16)/rows;
+  const s=svg(W,H); s.setAttribute("aria-label","Señal EEG de la época seleccionada");
+  const cols=["--series-1","--series-2"];
+  for(let r=0;r<rows;r++){const cy=10+r*rh+rh/2;
+    s.appendChild(S("line",{x1:L,x2:W-R,y1:cy,y2:cy,stroke:CV("--grid")}));
+    let d="M";const N=560;
+    for(let i=0;i<N;i++){const t=i/N;
+      const v=Math.sin(t*Math.PI*2*13+r)*7 + Math.sin(t*Math.PI*2*47+r*2)*4
+            + Math.sin(t*Math.PI*2*3.4+r)*9*(r?0.7:1)
+            + (Math.sin(i*(12.9+r*3))*43758.5453%1)*6;
+      d+=`${(L+t*(W-L-R)).toFixed(1)} ${(cy+v*0.9).toFixed(1)}${i<N-1?"L":""}`;}
+    s.appendChild(S("path",{d,fill:"none",stroke:CV(cols[r]),"stroke-width":1.1,"stroke-linejoin":"round"}));}
+  [0,5,10,15,20,25,30].forEach(t=>{const x=L+(t/30)*(W-L-R);
+    s.appendChild(Object.assign(S("text",{x,y:H-1,"text-anchor":"middle","class":"tick"}),{textContent:t+"s"}));});
+  document.getElementById("c-signal").replaceChildren(s);
+});
+
+/* ================= 3 · class probabilities ================= */
+const P=[["N1",.41],["N2",.29],["REM",.16],["W",.11],["N3",.02],["M",.01]];
+reg(function probs(){
+  const el=document.getElementById("probs");
+  el.replaceChildren(...P.map((p,i)=>{
+    const d=document.createElement("div"); d.className="prob"+(i===0?" top":"");
+    d.innerHTML=`<span>${p[0]}</span><span><span class="bar" style="width:${p[1]*100}%;display:block"></span></span>
+      <span class="pv">${nf(p[1],2)}</span>`; return d;}));
+});
+
+/* ================= 3 · context strip ================= */
+reg(function ctx(){
+  const seq=["N2","N2","N2","N2","N2","N1","N2","N2","N2","N3","N3"];
+  const W=380,H=64,bw=W/seq.length;
+  const s=svg(W,H); s.setAttribute("aria-label","Contexto de épocas vecinas");
+  seq.forEach((st,i)=>{const cur=i===5;
+    s.appendChild(S("rect",{x:i*bw+1,y:14,width:bw-2,height:26,rx:3,
+      fill:CV(cur?"--series-1":"--seq-100"),
+      stroke:cur?CV("--series-1"):"none","stroke-width":cur?2:0}));
+    s.appendChild(Object.assign(S("text",{x:i*bw+bw/2,y:31,"text-anchor":"middle",
+      "class":"tick",fill:cur?"#fff":CV("--ink2"),"font-weight":cur?"700":"400"}),{textContent:st}));
+    s.appendChild(Object.assign(S("text",{x:i*bw+bw/2,y:54,"text-anchor":"middle","class":"tick"}),
+      {textContent:String(407+i)}));});
+  s.appendChild(Object.assign(S("text",{x:0,y:8,"class":"axlbl"}),{textContent:"época ← anterior · posterior →"}));
+  document.getElementById("c-ctx").replaceChildren(s);
+});
+
+/* ================= 4 · confusion matrix ================= */
+const CLS=["W","N1","N2","N3","REM"];
+const CM=[[.94,.03,.02,.00,.01],[.16,.47,.24,.01,.12],[.02,.05,.91,.02,.00],
+          [.01,.00,.12,.86,.01],[.02,.06,.03,.00,.89]];
+reg(function cm(){
+  const W=520,cell=64,L=54,T=48,H=T+CLS.length*cell+30;
+  const s=svg(W,H); s.setAttribute("aria-label","Matriz de confusión");
+  CLS.forEach((c,j)=>s.appendChild(Object.assign(S("text",{x:L+j*cell+cell/2,y:T-12,
+    "text-anchor":"middle","class":"tick"}),{textContent:c})));
+  s.appendChild(Object.assign(S("text",{x:L,y:T-30,"class":"axlbl"}),{textContent:"Predicho →"}));
+  s.appendChild(Object.assign(S("text",{x:8,y:T-12,"class":"axlbl"}),{textContent:"Real ↓"}));
+  CM.forEach((row,i)=>{
+    s.appendChild(Object.assign(S("text",{x:L-10,y:T+i*cell+cell/2+4,"text-anchor":"end","class":"tick"}),
+      {textContent:CLS[i]}));
+    row.forEach((v,j)=>{const step=SEQ[Math.min(6,Math.round(v*6.9))];
+      s.appendChild(S("rect",{x:L+j*cell+1,y:T+i*cell+1,width:cell-2,height:cell-2,rx:4,fill:CV(step)}));
+      s.appendChild(Object.assign(S("text",{x:L+j*cell+cell/2,y:T+i*cell+cell/2+4,
+        "text-anchor":"middle","font-size":"12","font-weight":"600",
+        fill:v>0.45?"#fff":CV("--ink2")}),{textContent:nf(v*100,0)}));});});
+  s.appendChild(Object.assign(S("text",{x:L,y:H-8,"class":"axlbl"}),
+    {textContent:"Valores en % de la fila (recall). N1 se confunde sobre todo con N2 y W."}));
+  document.getElementById("c-cm").replaceChildren(s);
+});
+
+/* ================= 4 · per-class F1 ================= */
+const F1=[["W",.90],["N1",.48],["N2",.88],["N3",.85],["REM",.86]];
+reg(function f1(){
+  const W=400,rh=30,H=F1.length*rh+12,lw=42,bw=W-lw-48;
+  const s=svg(W,H); s.setAttribute("aria-label","F1 por clase");
+  F1.forEach((f,i)=>{const y=i*rh+6;
+    s.appendChild(Object.assign(S("text",{x:lw-10,y:y+16,"text-anchor":"end","class":"tick"}),{textContent:f[0]}));
+    s.appendChild(S("rect",{x:lw,y:y+4,width:bw,height:16,rx:4,fill:CV("--grid")}));
+    s.appendChild(S("rect",{x:lw,y:y+4,width:bw*f[1],height:16,rx:4,fill:CV("--series-1")}));
+    s.appendChild(Object.assign(S("text",{x:lw+bw+8,y:y+17,"class":"dlbl"}),{textContent:nf(f[1],2)}));
+    if(f[0]==="N1")s.appendChild(S("rect",{x:lw-2,y:y+2,width:bw*f[1]+4,height:20,rx:6,fill:"none",
+      stroke:CV("--critical"),"stroke-width":1.6,"stroke-dasharray":"4 3"}));});
+  document.getElementById("c-f1").replaceChildren(s);
+});
+
+/* ================= 4 · literature comparison ================= */
+const LIT=[["DeepSleepNet\n2017",82.0,76.9],["JCPNet\n2019",81.9,73.8],["SleepEEGNet\n2019",84.3,79.7],
+           ["ZleepAnlystNet\n2024",87.0,82.1],["Morfeo\n(meta)",84.0,79.0]];
+reg(function lit(){
+  // Dumbbell: dos medidas en la misma escala, sin línea base truncada.
+  const W=1000,rh=44,L=182,R=14,H=LIT.length*rh+38,pw=W-L-R,lo=70,hi=90;
+  const s=svg(W,H); s.setAttribute("aria-label","Comparación con la literatura");
+  const x=v=>L+((v-lo)/(hi-lo))*pw;
+  [70,75,80,85,90].forEach(t=>{
+    s.appendChild(S("line",{x1:x(t),x2:x(t),y1:14,y2:LIT.length*rh+14,stroke:CV("--grid")}));
+    s.appendChild(Object.assign(S("text",{x:x(t),y:H-8,"text-anchor":"middle","class":"tick"}),
+      {textContent:t+" %"}));});
+  LIT.forEach((d,i)=>{const y=i*rh+36, mine=i===LIT.length-1;
+    if(mine)s.appendChild(S("rect",{x:L-176,y:y-19,width:W-R-L+176,height:34,rx:6,
+      fill:CV("--surface-2")}));
+    d[0].split("\n").forEach((ln,k)=>s.appendChild(Object.assign(
+      S("text",{x:L-14,y:y-1+k*13,"text-anchor":"end","class":"tick","font-weight":mine?"700":"400"}),
+      {textContent:ln})));
+    s.appendChild(S("line",{x1:x(d[2]),x2:x(d[1]),y1:y,y2:y,stroke:CV("--axis"),"stroke-width":2}));
+    [[d[2],"--series-2"],[d[1],"--series-1"]].forEach(([v,c])=>{
+      s.appendChild(S("circle",{cx:x(v),cy:y,r:6,fill:CV(c),stroke:CV(mine?"--surface-2":"--surface-1"),
+        "stroke-width":2}));});
+    s.appendChild(Object.assign(S("text",{x:x(d[2])-12,y:y+4,"text-anchor":"end","class":"dlbl"}),
+      {textContent:nf(d[2])}));
+    s.appendChild(Object.assign(S("text",{x:x(d[1])+12,y:y+4,"class":"dlbl"}),{textContent:nf(d[1])}));});
+  document.getElementById("c-lit").replaceChildren(s);
+});
+
+/* ================= 5 · class imbalance ================= */
+const IMB=[["W",8285,19.6],["N1",2804,6.6],["N2",17799,42.1],["N3",5703,13.5],["REM",7717,18.2]];
+reg(function imb(){
+  const W=560,H=230,L=42,T=16,B=44,pw=W-L-14,ph=H-T-B,mx=45;
+  const s=svg(W,H); s.setAttribute("aria-label","Desbalance de clases");
+  [0,10,20,30,40].forEach(t=>{const y=T+ph-(t/mx)*ph;
+    s.appendChild(S("line",{x1:L,x2:W-14,y1:y,y2:y,stroke:CV("--grid")}));
+    s.appendChild(Object.assign(S("text",{x:L-8,y:y+4,"text-anchor":"end","class":"tick"}),{textContent:t+"%"}));});
+  const bw=pw/IMB.length;
+  IMB.forEach((d,i)=>{const h=(d[2]/mx)*ph,x=L+i*bw+10;
+    const isN1=d[0]==="N1";
+    s.appendChild(S("rect",{x,y:T+ph-h,width:bw-20,height:h,rx:4,fill:CV("--series-1")}));
+    s.appendChild(S("rect",{x,y:T+ph-4,width:bw-20,height:4,fill:CV("--series-1")}));
+    if(isN1)s.appendChild(S("rect",{x:x-3,y:T+ph-h-3,width:bw-14,height:h+3,rx:6,fill:"none",
+      stroke:CV("--critical"),"stroke-width":2,"stroke-dasharray":"4 3"}));
+    s.appendChild(Object.assign(S("text",{x:x+(bw-20)/2,y:T+ph-h-8,"text-anchor":"middle","class":"dlbl"}),
+      {textContent:nf(d[2])+" %"}));
+    s.appendChild(Object.assign(S("text",{x:x+(bw-20)/2,y:T+ph+17,"text-anchor":"middle","class":"tick",
+      "font-weight":isN1?"700":"400"}),{textContent:d[0]}));
+    s.appendChild(Object.assign(S("text",{x:x+(bw-20)/2,y:T+ph+31,"text-anchor":"middle","class":"tick"}),
+      {textContent:d[1].toLocaleString("es-CO")}));});
+  s.appendChild(S("line",{x1:L,x2:W-14,y1:T+ph,y2:T+ph,stroke:CV("--axis")}));
+  document.getElementById("c-imb").replaceChildren(s);
+});
+
+/* ================= 5 · sleep composition by age ================= */
+const AGE=[["25–39",[14,20,5,42,19]],["40–54",[18,18,6,43,15]],
+           ["55–69",[23,16,7,44,10]],["70–101",[29,14,8,43,6]]];
+reg(function age(){
+  // Múltiplos pequeños: una serie por panel, un solo color. Se lee la tendencia por estadio,
+  // que es el punto; una barra apilada la escondería.
+  const names=["W","REM","N1","N2","N3"], W=1000, pW=W/5, H=196, T=44, B=46, ph=H-T-B, mx=52;
+  const s=svg(W,H); s.setAttribute("aria-label","Composición del sueño por rango de edad");
+  s.appendChild(Object.assign(S("text",{x:0,y:14,"class":"axlbl"}),
+    {textContent:"Con la edad sube la vigilia intra-sueño y cae N3 — un hallazgo esperado que sirve de control de sanidad."}));
+  names.forEach((nm,k)=>{const ox=k*pW+40, iw=pW-58;
+    s.appendChild(Object.assign(S("text",{x:ox,y:T-10,"font-size":"12","font-weight":"600",
+      fill:CV("--ink")}),{textContent:nm+" (%)"}));
+    [0,20,40].forEach(t=>{const y=T+ph-(t/mx)*ph;
+      s.appendChild(S("line",{x1:ox,x2:ox+iw,y1:y,y2:y,stroke:CV("--grid")}));
+      if(k===0)s.appendChild(Object.assign(S("text",{x:ox-8,y:y+4,"text-anchor":"end","class":"tick"}),
+        {textContent:t}));});
+    const bw=iw/AGE.length;
+    AGE.forEach((a,i)=>{const v=a[1][k], h=(v/mx)*ph, x=ox+i*bw+3;
+      s.appendChild(S("rect",{x,y:T+ph-h,width:bw-6,height:h,rx:3,fill:CV("--series-1")}));
+      s.appendChild(S("rect",{x,y:T+ph-3,width:bw-6,height:3,fill:CV("--series-1")}));
+      s.appendChild(Object.assign(S("text",{x:x+(bw-6)/2,y:T+ph-h-5,"text-anchor":"middle",
+        "font-size":"10.5",fill:CV("--ink2"),"font-weight":"600"}),{textContent:v}));
+      s.appendChild(Object.assign(S("text",{x:x+(bw-6)/2,y:T+ph+13,"text-anchor":"middle",
+        "font-size":"9.5",fill:CV("--muted")}),{textContent:a[0]}));});
+    s.appendChild(S("line",{x1:ox,x2:ox+iw,y1:T+ph,y2:T+ph,stroke:CV("--axis")}));});
+  s.appendChild(Object.assign(S("text",{x:0,y:H-8,"class":"axlbl"}),
+    {textContent:"Rangos de edad en años. Eje vertical común a los cinco paneles (0–52 %)."}));
+  document.getElementById("c-age").replaceChildren(s);
+});
+
+/* ================= interactions ================= */
+document.getElementById("tabs").onclick=e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-selected",c===b));
+  ["t1","t2","t3","t4","t5"].forEach(id=>
+    document.getElementById(id).classList.toggle("hidden",id!==b.dataset.t));
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+document.getElementById("theme").onclick=e=>{
+  const dark=document.documentElement.dataset.theme==="dark";
+  document.documentElement.dataset.theme=dark?"light":"dark";
+  e.target.textContent=dark?"Modo oscuro":"Modo claro";
+  redrawAll();
+};
+document.getElementById("chans").onclick=e=>{
+  const c=e.target.closest(".ch"); if(!c||c.dataset.off)return;
+  const on=c.dataset.on==="1";
+  const eegOn=[...document.querySelectorAll('.ch[data-ch^="eeg"]')].filter(x=>x.dataset.on==="1").length;
+  if(on&&c.dataset.ch.startsWith("eeg")&&eegOn<=1)return;   // at least one EEG
+  c.dataset.on=on?"0":"1"; c.querySelector(".box").textContent=on?"":"✓";
+  const sel=[...document.querySelectorAll(".ch[data-ch]")].filter(x=>x.dataset.on==="1").map(x=>x.dataset.ch);
+  const key=(sel.filter(x=>x.startsWith("eeg")).length===2?"2 EEG":"1 EEG")+
+    (sel.includes("eog")?" + EOG":"")+(sel.includes("emg")?" + EMG":"");
+  const row=MONT.find(m=>m[0].includes(key.replace("1 EEG","1 EEG")))||MONT[0];
+  const f=({"1 EEG":.742,"1 EEG + EOG":.771,"1 EEG + EMG":.749,"1 EEG + EOG + EMG":.780,
+    "2 EEG":.790,"2 EEG + EOG":.812,"2 EEG + EMG":.795,"2 EEG + EOG + EMG":.818})[key]||.742;
+  document.getElementById("mF1").textContent=nf(f,2);
+  document.querySelector("#mF1 + .n").textContent=key;
+};
+const thr=document.getElementById("thr");
+thr.oninput=()=>{const v=thr.value/100;
+  document.getElementById("thrv").textContent=nf(v,2);
+  const n=UNC.filter(u=>1-u<v).length;
+  document.getElementById("flagn").textContent=`${n} de ${N_EP.toLocaleString("es-CO")} (${nf(n*100/N_EP)} %)`;
+  document.getElementById("mRev").textContent=nf(n*100/N_EP,0)+" %";};
+document.getElementById("modelseg").onclick=e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed",c===b));};
+</script>
+</body>
+</html>
