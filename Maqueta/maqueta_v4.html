@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAIA — Estimación de edad cerebral</title>
+<style>
+:root{
+  color-scheme: light;
+  --page:#f5f5f2; --surface-1:#fcfcfb; --surface-2:#f0efec; --surface-3:#e7e6e1;
+  --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.11);
+  --s1:#2a78d6; --s2:#eb6834;
+  --older:#e34948; --younger:#2a78d6;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --ok-text:#006300; --warn-text:#8a5c00;
+  --shadow:0 1px 2px rgba(11,11,11,.05), 0 4px 14px rgba(11,11,11,.05);
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface-1:#1a1a19; --surface-2:#232322; --surface-3:#2c2c2a;
+  --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.12);
+  --s1:#3987e5; --s2:#d95926;
+  --older:#e66767; --younger:#3987e5;
+  --ok-text:#0ca30c; --warn-text:#fab219;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-0.012em}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px 72px}
+.hidden{display:none !important}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.tick{font-size:10.5px;fill:var(--muted)}
+.axlbl{font-size:11px;fill:var(--muted)}
+.dlbl{font-size:11px;fill:var(--ink2);font-weight:600}
+.grow{flex:1}
+
+/* ---------- chrome ---------- */
+header{background:var(--surface-1);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:30}
+.hbar{max-width:1180px;margin:0 auto;padding:13px 22px;display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:9px;font-weight:650;font-size:16.5px;letter-spacing:-0.02em}
+.mark{width:26px;height:29px;flex:none;color:var(--s1);display:block}
+.mark svg{width:100%;height:100%;display:block}
+.user{display:flex;align-items:center;gap:9px}
+.user .av{width:27px;height:27px;border-radius:50%;background:var(--surface-3);color:var(--ink2);
+  display:grid;place-items:center;font-size:11px;font-weight:700;flex:none}
+.user .nm{font-size:12.5px;color:var(--ink2);line-height:1.25}
+.user .nm b{display:block;color:var(--ink);font-weight:600;font-size:13px}
+.sub{color:var(--muted);font-size:12.5px;border-left:1px solid var(--border);padding-left:13px}
+.badge{font-size:10.5px;font-weight:650;padding:3.5px 9px;border-radius:999px;letter-spacing:.03em;
+  background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--ink);
+  border:1px solid color-mix(in srgb,var(--warn) 55%,transparent)}
+.ghost{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 13px;
+  font:inherit;font-size:12.5px;color:var(--ink2);cursor:pointer}
+.ghost:hover{color:var(--ink);background:var(--surface-3)}
+nav{max-width:1180px;margin:0 auto;padding:0 22px;display:flex;gap:2px}
+nav button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 14px;
+  font:inherit;font-size:13.5px;color:var(--ink2);cursor:pointer;white-space:nowrap}
+nav button:hover{color:var(--ink)}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--s1);font-weight:600}
+
+/* ---------- layout ---------- */
+.panel{background:var(--surface-1);border:1px solid var(--border);border-radius:13px;padding:19px;margin-top:16px}
+.panel.flat{background:var(--surface-2)}
+.panel > h3{font-size:14.5px}
+.panel .cap{color:var(--muted);font-size:12.5px;margin-top:2px;margin-bottom:15px}
+.row{display:grid;gap:16px}
+@media(min-width:920px){ .row.two{grid-template-columns:1fr 1fr} }
+.stitle{margin-top:26px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.stitle h2{font-size:20px}
+.stitle .why{color:var(--muted);font-size:12.5px}
+.mini{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.55}
+.mini b{color:var(--ink2);font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2.5px 9px;border-radius:999px;
+  border:1px solid var(--border);color:var(--ink2);background:var(--surface-2);white-space:nowrap}
+.pill.ok{border-color:color-mix(in srgb,var(--good) 45%,transparent);color:var(--ok-text)}
+.pill.x{border-color:color-mix(in srgb,var(--crit) 45%,transparent);color:var(--crit)}
+.back{display:inline-flex;align-items:center;gap:7px;background:none;border:0;padding:0;margin-top:24px;
+  font:inherit;font-size:13px;color:var(--ink2);cursor:pointer}
+.back:hover{color:var(--s1)}
+
+/* ---------- upload ---------- */
+.drop{border:1.5px dashed var(--axis);border-radius:12px;padding:58px 20px;text-align:center;
+  background:var(--surface-2);transition:.15s;cursor:pointer}
+.drop:hover{border-color:var(--s1);background:color-mix(in srgb,var(--s1) 5%,var(--surface-2))}
+.drop .ic{width:54px;height:54px;margin:0 auto 15px;border-radius:15px;background:var(--surface-1);
+  border:1px solid var(--border);display:grid;place-items:center;font-size:24px;box-shadow:var(--shadow)}
+.drop strong{display:block;font-size:17.5px;margin-bottom:5px;letter-spacing:-0.015em}
+.drop .hint{color:var(--muted);font-size:13px}
+.filerow{display:flex;gap:11px;align-items:center;border:1px solid var(--border);border-radius:10px;
+  padding:10px 12px;margin-top:9px;background:var(--surface-1)}
+.filerow .ic{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;font-size:9px;
+  font-weight:700;color:#fff;flex:none;background:var(--s1)}
+.filerow .nm{font-weight:600;font-size:13px}
+.filerow .mt{font-size:11.5px;color:var(--muted)}
+.filerow.demo{cursor:pointer}
+.filerow.demo:hover{border-color:var(--s1);background:color-mix(in srgb,var(--s1) 5%,var(--surface-1))}
+.cta{background:var(--s1);color:#fff;border:0;border-radius:10px;padding:13px 26px;
+  font:inherit;font-size:14.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow)}
+.cta:hover{filter:brightness(1.06)}
+.fields{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-end;margin-top:20px}
+.fld{display:flex;flex-direction:column;gap:6px}
+.fld label{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.fld .req{color:var(--crit)}
+.fld input{background:var(--surface-1);border:1px solid var(--border);border-radius:9px;padding:10px 12px;
+  font:inherit;font-size:15px;color:var(--ink);width:112px}
+.seg{display:flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.seg button{background:var(--surface-1);border:0;border-right:1px solid var(--border);padding:10px 20px;
+  font:inherit;font-size:14px;color:var(--ink2);cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--s1);color:#fff;font-weight:600}
+
+/* ---------- hero ---------- */
+.hero{border-radius:14px;padding:22px;border:1px solid var(--border);margin-top:16px;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--older) 9%,var(--surface-1)),var(--surface-1) 58%)}
+.heroTop{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:3px}
+.heroTop h3{font-size:14.5px}
+.bigrow{display:flex;align-items:flex-end;gap:32px;flex-wrap:wrap;margin-top:16px}
+.big{display:flex;flex-direction:column}
+.big .k{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.big .v{font-size:48px;font-weight:640;letter-spacing:-0.035em;line-height:1.05;margin-top:3px}
+.big .v small{font-size:19px;font-weight:500;color:var(--ink2);letter-spacing:-0.01em}
+.big .n{font-size:12px;color:var(--ink2);margin-top:3px}
+.bai{padding:12px 18px;border-radius:11px;background:var(--surface-2);border:1px solid var(--border)}
+.bai .v{font-size:36px;color:var(--older)}
+.alert{display:flex;gap:11px;border-radius:10px;padding:12px 13px;font-size:12.5px;line-height:1.5;margin-top:18px}
+.alert .m{flex:none;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;
+  font-size:11px;font-weight:700;margin-top:1px;background:var(--warn);color:#3a2700}
+.alert.w{background:color-mix(in srgb,var(--warn) 13%,var(--surface-1));
+  border:1px solid color-mix(in srgb,var(--warn) 50%,transparent)}
+.alert .ti{font-weight:650;display:block;margin-bottom:2px}
+
+/* ---------- tiles / tables ---------- */
+.tiles{display:grid;gap:11px;grid-template-columns:repeat(auto-fit,minmax(155px,1fr))}
+.tile{background:var(--surface-1);border:1px solid var(--border);border-radius:11px;padding:13px 14px}
+.tile .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.045em;font-weight:600}
+.tile .v{font-size:25px;font-weight:640;margin-top:3px;letter-spacing:-0.025em}
+.tile .n{font-size:11.5px;color:var(--ink2);margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:right;padding:11px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums}
+th:first-child,td:first-child,th.l,td.l{text-align:left;font-variant-numeric:normal}
+th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.045em}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+.act{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:7px;
+  border:1px solid var(--border);background:var(--surface-1);color:var(--ink2);font-size:13px}
+tbody tr:hover .act{border-color:var(--s1);color:var(--s1)}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--grid);font-size:13px}
+.kv:last-child{border-bottom:0}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{font-weight:550;font-variant-numeric:tabular-nums;text-align:right}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--grid)}
+.chk:last-child{border-bottom:0}
+.chk .g{width:17px;height:17px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:10px;color:#fff;font-weight:700;margin-top:1px}
+.chk .g.ok{background:var(--good)} .chk .g.w{background:var(--warn);color:#3a2700}
+.chk .g.n{background:var(--surface-3);color:var(--muted)}
+.chk .t{font-size:13px;font-weight:550}
+.chk .d{font-size:11.5px;color:var(--muted);margin-top:1px}
+.filters{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:16px;margin-bottom:14px}
+.chipset{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.chipset button{background:var(--surface-1);border:0;border-right:1px solid var(--border);padding:7px 14px;
+  font:inherit;font-size:12.5px;color:var(--ink2);cursor:pointer}
+.chipset button:last-child{border-right:0}
+.chipset button[aria-pressed="true"]{background:var(--s1);color:#fff;font-weight:600}
+.search{background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:7px 12px;
+  font:inherit;font-size:12.5px;color:var(--ink);width:200px}
+.cta[disabled]{background:var(--surface-3);color:var(--muted);cursor:default;box-shadow:none}
+
+/* ---------- login ---------- */
+#vLogin{min-height:86vh;display:grid;place-items:center}
+.card{width:100%;max-width:378px;background:var(--surface-1);border:1px solid var(--border);
+  border-radius:15px;padding:34px 30px;box-shadow:var(--shadow)}
+.card .brand{display:flex;flex-direction:column;align-items:center;gap:11px;margin-bottom:26px}
+.card .brand .mark{width:42px;height:47px}
+.card .brand .wm{font-size:23px;font-weight:650;letter-spacing:-0.025em}
+.card .brand .un{font-size:12px;color:var(--muted);text-align:center;line-height:1.4}
+.card h2{font-size:16px;margin-bottom:3px}
+.card .lead{font-size:12.5px;color:var(--muted);margin-bottom:20px}
+.card .fld{margin-bottom:14px}
+.card .fld input{width:100%;font-size:14px}
+.card .cta{width:100%;margin-top:6px}
+.card .foot{font-size:11.5px;color:var(--muted);margin-top:18px;text-align:center;line-height:1.5}
+</style>
+</head>
+<body>
+
+<header id="appHeader" class="hidden">
+  <div class="hbar">
+    <span class="mark"><svg viewBox="0 0 26 29" aria-hidden="true"><!-- MARCADOR DE POSICIÓN: reemplazar por el SVG oficial de la Universidad de los Andes --><path d="M13 1.2 L24 5.4 V15 C24 21.6 19.2 26.4 13 28.2 C6.8 26.4 2 21.6 2 15 V5.4 Z" fill="currentColor"/><path d="M13 5.4 L20.4 8.2 V15 C20.4 19.4 17.4 22.7 13 24.2 C8.6 22.7 5.6 19.4 5.6 15 V8.2 Z" fill="none" stroke="#fff" stroke-width="1.3" stroke-linejoin="round" opacity=".92"/></svg></span>
+    <div class="logo">MAIA</div>
+    <div class="sub">Universidad de los Andes · Estimación de edad cerebral a partir de EEG de sueño</div>
+    <div class="grow"></div>
+    <div class="user">
+      <span class="av">SU</span>
+      <span class="nm"><b>Superusuario</b>Sesión activa</span>
+      <button class="ghost" id="btnOut" style="margin-left:5px">Salir</button>
+    </div>
+  </div>
+  <nav role="tablist">
+    <button role="tab" aria-selected="true" data-v="vList">Registros</button>
+    <button role="tab" aria-selected="false" data-v="vUp">Analizar nuevo</button>
+  </nav>
+</header>
+
+<div class="wrap">
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<section id="vLogin">
+  <div class="card">
+    <div class="brand">
+      <span class="mark"><svg viewBox="0 0 26 29" aria-hidden="true"><!-- MARCADOR DE POSICIÓN: reemplazar por el SVG oficial de la Universidad de los Andes --><path d="M13 1.2 L24 5.4 V15 C24 21.6 19.2 26.4 13 28.2 C6.8 26.4 2 21.6 2 15 V5.4 Z" fill="currentColor"/><path d="M13 5.4 L20.4 8.2 V15 C20.4 19.4 17.4 22.7 13 24.2 C8.6 22.7 5.6 19.4 5.6 15 V8.2 Z" fill="none" stroke="#fff" stroke-width="1.3" stroke-linejoin="round" opacity=".92"/></svg></span>
+      <div style="text-align:center">
+        <div class="wm">MAIA</div>
+        <div class="un">Maestría en Inteligencia Artificial<br>Universidad de los Andes</div>
+      </div>
+    </div>
+    <h2>Iniciar sesión</h2>
+    <p class="lead">Estimación de edad cerebral a partir de EEG de sueño.</p>
+    <div class="fld">
+      <label>Usuario</label>
+      <input type="text" id="usr" value="superusuario" autocomplete="username">
+    </div>
+    <div class="fld">
+      <label>Contraseña</label>
+      <input type="password" id="pwd" value="somnoai2026" autocomplete="current-password">
+    </div>
+    <button class="cta" id="btnIn">Ingresar</button>
+    <div class="foot">Acceso restringido a un único usuario administrador.<br>
+      No hay registro de cuentas nuevas.</div>
+  </div>
+</section>
+
+<!-- ══════════════ REGISTROS ══════════════ -->
+<section id="vList" class="hidden">
+  <div class="stitle">
+    <h2>Registros</h2>
+    <span class="why">Todos los análisis realizados, guardados en la base de datos.</span>
+  </div>
+
+  <div class="tiles" style="margin-top:16px">
+    <div class="tile"><div class="k">Registros analizados</div><div class="v">14</div>
+      <div class="n">13 sujetos distintos</div></div>
+    <div class="tile"><div class="k">Sobre el umbral</div><div class="v">5</div>
+      <div class="n">|BAI| mayor a 10 años</div></div>
+    <div class="tile"><div class="k">Divergencia mediana</div><div class="v">6,8</div>
+      <div class="n">años · rango −20,8 a +18,9</div></div>
+    <div class="tile"><div class="k">Último análisis</div><div class="v">Hoy</div>
+      <div class="n">SC4001 · 14:32</div></div>
+  </div>
+
+  <div class="panel">
+    <h3>Distribución del BAI</h3>
+    <p class="cap">Un punto por registro analizado. La zona sombreada marca el umbral de priorización.</p>
+    <div id="c-strip"></div>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
+      <div><h3>Historial de análisis</h3>
+        <p class="cap" style="margin-bottom:0">Haga clic en cualquier fila para abrir sus resultados.</p></div>
+      <button class="cta" id="btnNew" style="padding:10px 18px;font-size:13.5px">+ Analizar nuevo</button>
+    </div>
+    <div class="filters">
+      <div class="chipset" id="filt">
+        <button aria-pressed="true" data-f="all">Todos</button>
+        <button aria-pressed="false" data-f="prio">Sobre el umbral</button>
+      </div>
+      <input class="search" placeholder="Buscar sujeto o archivo…">
+      <span class="grow"></span>
+      <span class="mini" style="margin:0" id="cnt">14 registros</span>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden">
+      <table><thead><tr>
+        <th class="l">Sujeto</th><th class="l">Archivo</th><th class="l">Fecha</th>
+        <th>Edad real</th><th>Edad cerebral</th><th class="l">BAI</th><th class="l">Estado</th><th></th>
+      </tr></thead><tbody id="tb"></tbody></table>
+    </div>
+    <div class="mini">Cada análisis se guarda con su archivo, la edad ingresada y el resultado del modelo.
+      El listado lo sirve la API y lo consume el front en React. Los registros crecen a medida que se usa
+      la plataforma y son el insumo para revisar el rendimiento del modelo con el tiempo.</div>
+  </div>
+</section>
+
+<!-- ══════════════ ANALIZAR ══════════════ -->
+<section id="vUp" class="hidden">
+  <button class="back" id="backUp">← Volver a registros</button>
+  <div class="stitle" style="margin-top:8px"><h2>Analizar un registro</h2></div>
+
+  <div class="panel">
+    <h3>Cargar polisomnografía</h3>
+    <p class="cap">Un registro de una noche. Formatos aceptados: <b>.edf</b> y <b>.zip</b>.</p>
+    <div class="drop" id="dz">
+      <div class="ic">↑</div>
+      <strong>Arrastre aquí el archivo .edf</strong>
+      <div class="hint">o un .zip con el par PSG + hipnograma · máx. 600 MB · haga clic para buscar</div>
+    </div>
+
+    <div class="fields">
+      <div class="fld">
+        <label>Edad cronológica <span class="req">*</span></label>
+        <input type="number" value="33" min="1" max="120">
+      </div>
+      <div class="grow"></div>
+      <button class="cta" id="btnRun">Analizar registro →</button>
+    </div>
+    <div class="mini">La edad cronológica <b>no entra al modelo</b>: se usa solo para calcular el Brain Age
+      Index una vez estimada la edad cerebral. Sin ella no hay BAI, por eso se pide antes de analizar y
+      no después.</div>
+  </div>
+
+  <div class="panel flat">
+    <h3>O pruebe con un registro del dataset</h3>
+    <p class="cap">Tres noches de Sleep-EDFx cargadas de antemano.</p>
+    <div class="filerow demo"><div class="ic">EDF</div>
+      <div><div class="nm">SC4001E0 · sujeto 00, noche 1</div><div class="mt">mujer, 33 años</div></div></div>
+    <div class="filerow demo"><div class="ic">EDF</div>
+      <div><div class="nm">SC4059E0 · sujeto 59, noche 1</div><div class="mt">hombre, 89 años</div></div></div>
+    <div class="filerow demo"><div class="ic">EDF</div>
+      <div><div class="nm">SC4021E0 · sujeto 21, noche 1</div><div class="mt">mujer, 27 años</div></div></div>
+  </div>
+</section>
+
+<!-- ══════════════ RESULTADO ══════════════ -->
+<section id="vRes" class="hidden">
+  <button class="back" id="backRes">← Volver a registros</button>
+  <div class="stitle" style="margin-top:8px"><h2>Resultados del análisis</h2></div>
+
+  <!-- 1 -->
+  <div class="panel">
+    <div style="display:flex;gap:13px;align-items:center;flex-wrap:wrap">
+      <div class="filerow" style="margin:0;flex:1;min-width:280px">
+        <div class="ic">EDF</div>
+        <div><div class="nm">SC4001E0-PSG.edf</div>
+          <div class="mt">Analizado el 20 de agosto de 2026, 14:32 · mujer, 33 años</div></div>
+      </div>
+      <button class="ghost" id="btnOther">Analizar otro registro</button>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="hero">
+    <div class="heroTop"><h3>Edad cerebral estimada</h3><span class="pill">Modelo gbm-v0.4</span></div>
+    <div class="bigrow">
+      <div class="big">
+        <span class="k">Edad cerebral</span>
+        <span class="v">41,6 <small>± 6,1 años</small></span>
+        <span class="n">Intervalo de predicción del 90 %: 35,5 – 47,7</span>
+      </div>
+      <div class="big">
+        <span class="k">Edad cronológica</span>
+        <span class="v" style="color:var(--ink2)">33 <small>años</small></span>
+        <span class="n">Dato ingresado al cargar el archivo</span>
+      </div>
+      <div class="big bai">
+        <span class="k">Brain Age Index</span>
+        <span class="v">+8,6</span>
+        <span class="n">años por encima</span>
+      </div>
+    </div>
+    <div style="margin-top:22px" id="c-scale"></div>
+    <div class="alert w"><span class="m">!</span><span>
+      <span class="ti">El intervalo de predicción incluye la edad cronológica.</span>
+      Con un error típico de ±6 años, un BAI de +8,6 está apenas fuera del rango esperable.
+      Este registro <b>no</b> supera el umbral de priorización de 10 años.</span></div>
+  </div>
+
+  <!-- 3 -->
+  <div class="panel">
+    <h3>Espectro frente a la norma de su edad</h3>
+    <p class="cap">Potencia espectral del EEG en sueño NREM, promediada sobre ventanas muestreadas a lo
+      largo de la noche. La banda gris es el rango observado en los sujetos de edad similar del conjunto
+      de entrenamiento.</p>
+    <div style="display:flex;gap:16px;font-size:12.5px;color:var(--ink2);margin-bottom:10px;flex-wrap:wrap">
+      <span><i style="display:inline-block;width:14px;height:2px;border-radius:2px;
+        background:var(--s1);margin-right:6px;vertical-align:4px"></i>Este sujeto</span>
+      <span><i style="display:inline-block;width:14px;height:2px;border-radius:2px;
+        background:var(--muted);margin-right:6px;vertical-align:4px"></i>Norma a los 33 años</span>
+    </div>
+    <div id="c-spectrum"></div>
+    <div class="mini">Los <b>husos de sueño (12–16 Hz)</b> se pierden con la edad: el análisis del equipo
+      encontró una correlación de <b>r = −0,46</b> entre su potencia y la edad, sobre las 153 noches del
+      subconjunto Sleep Cassette. Este sujeto tiene un 62 % menos de husos de los que le corresponden.</div>
+  </div>
+
+  <!-- 4 -->
+  <div class="panel">
+    <h3>Calidad del registro</h3>
+    <p class="cap">Qué contiene el archivo y qué parte de él alimentó al modelo.</p>
+    <div id="c-quality"></div>
+    <div class="row two" style="margin-top:22px;gap:40px">
+      <div>
+        <h4 style="font-size:12.5px;margin-bottom:6px">El archivo</h4>
+        <div class="kv"><span>Nombre</span><span>SC4001E0-PSG.edf</span></div>
+        <div class="kv"><span>Tamaño</span><span>52,3 MB</span></div>
+        <div class="kv"><span>Duración total</span><span>22 h 04 min</span></div>
+        <div class="kv"><span>Frecuencia de muestreo</span><span>100 Hz</span></div>
+        <div class="kv"><span>Canales en el archivo</span><span>7</span></div>
+        <div class="kv"><span>Canal utilizado</span><span>EEG Fpz-Cz</span></div>
+        <div class="kv"><span>Sujeto · noche</span><span>SC4001 · noche 1</span></div>
+      </div>
+      <div>
+        <h4 style="font-size:12.5px;margin-bottom:6px">Lo que se analizó</h4>
+        <div class="kv"><span>Ventana de sueño</span><span>8 h 36 min</span></div>
+        <div class="kv"><span>Épocas de 30 s en la ventana</span><span>1.032</span></div>
+        <div class="kv"><span>Épocas NREM utilizables</span><span>612</span></div>
+        <div class="kv"><span>Ventanas muestreadas para el espectro</span><span>30</span></div>
+        <div class="kv"><span>Épocas descartadas</span><span>420</span></div>
+        <div class="kv"><span>Épocas sin clasificar</span><span>3,1 %</span></div>
+        <div class="kv"><span>Vigilia recortada</span><span>12 h 48 min</span></div>
+      </div>
+    </div>
+    <div class="mini">Los registros Sleep Cassette duran hasta <b>22 horas</b> porque incluyen el día
+      alrededor de la noche. Recortar esa vigilia es obligatorio: sin recorte, el 65 % de las épocas del
+      dataset son vigilia y el espectro quedaría dominado por señal despierta.</div>
+  </div>
+</section>
+
+</div>
+
+<script>
+const S=(t,a={})=>{const e=document.createElementNS("http://www.w3.org/2000/svg",t);
+  for(const k in a)e.setAttribute(k,a[k]);return e};
+const T=(a,txt)=>Object.assign(S("text",a),{textContent:txt});
+const svg=(w,h)=>S("svg",{viewBox:`0 0 ${w} ${h}`,role:"img"});
+const CV=n=>getComputedStyle(document.body).getPropertyValue(n).trim();
+const nf=(v,d=1)=>v.toFixed(d).replace(".",",");
+const sg=(v,d=1)=>(v>0?"+":"−")+nf(Math.abs(v),d);
+const charts=[]; const reg=f=>{charts.push(f);f()};
+const TH=10;
+
+const REC=[
+  ["SC4001","SC4001E0-PSG.edf","20 ago 2026",33,41.6,+8.6],
+  ["SC4059","SC4059E0-PSG.edf","20 ago 2026",89,68.2,-20.8],
+  ["SC4021","SC4021E0-PSG.edf","19 ago 2026",27,45.9,+18.9],
+  ["SC4077","SC4077E0-PSG.edf","19 ago 2026",92,74.6,-17.4],
+  ["SC4033","SC4033E0-PSG.edf","19 ago 2026",54,71.1,+17.1],
+  ["SC4049","SC4049E0-PSG.edf","18 ago 2026",85,69.8,-15.2],
+  ["SC4012","SC4012E0-PSG.edf","18 ago 2026",31,38.4,+7.4],
+  ["SC4071","SC4071E0-PSG.edf","18 ago 2026",67,60.9,-6.1],
+  ["SC4005","SC4005E0-PSG.edf","17 ago 2026",26,30.2,+4.2],
+  ["SC4064","SC4064E0-PSG.edf","17 ago 2026",90,86.1,-3.9],
+  ["SC4009","SC4009E0-PSG.edf","17 ago 2026",33,35.8,+2.8],
+  ["SC4052","SC4052E0-PSG.edf","16 ago 2026",69,67.4,-1.6],
+  ["SC4028","SC4028E0-PSG.edf","16 ago 2026",56,57.3,+1.3],
+  ["SC4001","SC4001E1-PSG.edf","16 ago 2026",33,38.2,+5.2]];
+let filt="all";
+
+function renderTable(){
+  const rows=REC.filter(r=>filt==="all"||Math.abs(r[5])>TH);
+  document.getElementById("cnt").textContent=`${rows.length} registro${rows.length===1?"":"s"}`;
+  document.getElementById("tb").replaceChildren(...rows.map(r=>{
+    const tr=document.createElement("tr"); const pos=r[5]>0, over=Math.abs(r[5])>TH;
+    tr.innerHTML=`<td class="l"><b>${r[0]}</b></td>
+      <td class="l" style="color:var(--muted);font-size:12px">${r[1]}</td>
+      <td class="l" style="color:var(--muted)">${r[2]}</td>
+      <td>${r[3]}</td><td>${nf(r[4])}</td>
+      <td class="l"><b style="color:var(${pos?"--older":"--younger"})">${sg(r[5])}</b></td>
+      <td class="l">${over?'<span class="pill x">Priorizar</span>'
+                          :'<span class="pill ok">En rango</span>'}</td>
+      <td style="text-align:right"><span class="act">→</span></td>`;
+    tr.onclick=()=>go("vRes");
+    return tr;}));
+}
+
+/* ── BAI strip ── */
+reg(function strip(){
+  const W=1080,H=96,L=14,R=14,pw=W-L-R,lo=-25,hi=25;
+  const s=svg(W,H); s.setAttribute("aria-label","Distribución del BAI por registro");
+  const x=v=>L+((v-lo)/(hi-lo))*pw;
+  s.appendChild(S("rect",{x:L,y:36,width:pw,height:20,rx:10,fill:CV("--surface-3")}));
+  [[-25,-TH,"--younger"],[TH,25,"--older"]].forEach(([a,b,c])=>
+    s.appendChild(S("rect",{x:x(a),y:36,width:x(b)-x(a),height:20,rx:10,fill:CV(c),"fill-opacity":.20})));
+  [-20,-10,0,10,20].forEach(t=>{
+    s.appendChild(S("line",{x1:x(t),x2:x(t),y1:30,y2:62,stroke:t===0?CV("--ink2"):CV("--axis"),
+      "stroke-width":t===0?1.5:1,"stroke-dasharray":t===0?"none":"3 3"}));
+    s.appendChild(T({x:x(t),y:78,"text-anchor":"middle","class":"tick"},t===0?"0":sg(t,0)));});
+  REC.forEach(r=>{const over=Math.abs(r[5])>TH, pos=r[5]>0;
+    s.appendChild(S("circle",{cx:x(r[5]),cy:46,r:over?6:5,
+      fill:CV(over?(pos?"--older":"--younger"):"--muted"),
+      "fill-opacity":over?1:.5,stroke:CV("--surface-1"),"stroke-width":2}));});
+  s.appendChild(T({x:L,y:20,"class":"axlbl"},"más joven de lo esperado"));
+  s.appendChild(T({x:W-R,y:20,"text-anchor":"end","class":"axlbl"},"mayor de lo esperado"));
+  s.appendChild(T({x:L+pw/2,y:92,"text-anchor":"middle","class":"axlbl"},
+    "Brain Age Index (años) · umbral de priorización ±10"));
+  document.getElementById("c-strip").replaceChildren(s);
+});
+
+/* ── BAI scale ── */
+reg(function scale(){
+  const W=1080,H=76,L=10,R=10,pw=W-L-R,lo=-25,hi=25;
+  const s=svg(W,H); s.setAttribute("aria-label","Posición del BAI en la escala");
+  const x=v=>L+((v-lo)/(hi-lo))*pw;
+  s.appendChild(S("rect",{x:L,y:26,width:pw,height:14,rx:7,fill:CV("--surface-3")}));
+  [[-25,-TH,"--younger"],[TH,25,"--older"]].forEach(([a,b,c])=>{
+    s.appendChild(S("rect",{x:x(a),y:26,width:x(b)-x(a),height:14,rx:7,fill:CV(c),"fill-opacity":.20}));
+    s.appendChild(T({x:(x(a)+x(b))/2,y:36,"text-anchor":"middle","font-size":"9.5",
+      fill:CV("--muted"),"letter-spacing":".04em"},"priorizar"));});
+  s.appendChild(S("rect",{x:x(2.5),y:23,width:x(14.7)-x(2.5),height:20,rx:10,
+    fill:CV("--older"),"fill-opacity":.24,stroke:CV("--older"),"stroke-width":1.2}));
+  s.appendChild(S("circle",{cx:x(8.6),cy:33,r:8,fill:CV("--older"),stroke:CV("--surface-1"),"stroke-width":2.5}));
+  s.appendChild(S("line",{x1:x(0),x2:x(0),y1:19,y2:47,stroke:CV("--ink2"),"stroke-width":1.5}));
+  s.appendChild(T({x:x(0),y:14,"text-anchor":"middle","class":"dlbl"},"sin desvío"));
+  [[-20,"20 años más joven"],[20,"20 años mayor"]].forEach(([v,t])=>
+    s.appendChild(T({x:x(v),y:60,"text-anchor":"middle","class":"tick"},t)));
+  s.appendChild(T({x:x(8.6),y:60,"text-anchor":"middle","class":"dlbl"},"BAI +8,6"));
+  s.appendChild(T({x:L,y:73,"class":"axlbl"},
+    "Zona sombreada: umbral de priorización de ±10 años · barra clara: intervalo de predicción del 90 %"));
+  document.getElementById("c-scale").replaceChildren(s);
+});
+
+/* ── spectrum ── */
+reg(function spectrum(){
+  const W=1080,H=340,L=60,R=20,Tp=16,B=50,pw=W-L-R,ph=H-Tp-B;
+  const s=svg(W,H); s.setAttribute("aria-label","Espectro del sujeto frente a la norma de su edad");
+  const fmin=0.5,fmax=25;
+  const x=f=>L+((f-fmin)/(fmax-fmin))*pw;
+  const y=v=>Tp+ph-((Math.log10(v)+1)/4)*ph;
+  [0.1,1,10,100,1000].forEach(v=>{
+    s.appendChild(S("line",{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:CV("--grid")}));
+    s.appendChild(T({x:L-9,y:y(v)+4,"text-anchor":"end","class":"tick"},
+      v<1?"0,1":(v===1000?"1.000":String(v))));});
+  [0,5,10,15,20,25].forEach(f=>{ if(f<fmin)return;
+    s.appendChild(S("line",{x1:x(f),x2:x(f),y1:Tp,y2:Tp+ph,stroke:CV("--grid")}));
+    s.appendChild(T({x:x(f),y:Tp+ph+17,"text-anchor":"middle","class":"tick"},f));});
+  s.appendChild(S("rect",{x:x(12),y:Tp,width:x(16)-x(12),height:ph,fill:CV("--s1"),"fill-opacity":.07}));
+  s.appendChild(T({x:(x(12)+x(16))/2,y:Tp+12,"text-anchor":"middle","class":"tick",
+    "font-weight":"600"},"husos de sueño"));
+  const F=[]; for(let f=fmin;f<=fmax;f+=0.2)F.push(f);
+  const norm=f=>180*Math.pow(f,-1.72)+3.4*Math.exp(-Math.pow((f-13.4)/1.35,2))+0.17;
+  const subj=f=>150*Math.pow(f,-1.66)+0.85*Math.exp(-Math.pow((f-13.1)/1.6,2))+0.19;
+  let up="M",dn="";
+  F.forEach((f,i)=>{up+=`${x(f).toFixed(1)} ${y(norm(f)*1.55).toFixed(1)}${i<F.length-1?"L":""}`});
+  [...F].reverse().forEach(f=>{dn+=`L${x(f).toFixed(1)} ${y(norm(f)*0.64).toFixed(1)}`});
+  s.appendChild(S("path",{d:up+dn+"Z",fill:CV("--muted"),"fill-opacity":.16}));
+  const line=(fn,c,w,dash)=>{let d="M";
+    F.forEach((f,i)=>{d+=`${x(f).toFixed(1)} ${y(fn(f)).toFixed(1)}${i<F.length-1?"L":""}`});
+    s.appendChild(S("path",{d,fill:"none",stroke:CV(c),"stroke-width":w,
+      "stroke-dasharray":dash||"none","stroke-linejoin":"round"}));};
+  line(norm,"--muted",2,"6 4");
+  line(subj,"--s1",2.4);
+  s.appendChild(S("line",{x1:x(13.2),x2:x(13.2),y1:y(subj(13.2)),y2:y(norm(13.4)),
+    stroke:CV("--older"),"stroke-width":2.2}));
+  s.appendChild(S("circle",{cx:x(13.2),cy:y(subj(13.2)),r:4.5,fill:CV("--older"),
+    stroke:CV("--surface-1"),"stroke-width":1.5}));
+  s.appendChild(T({x:x(16.6),y:y(norm(13.4))+2,"class":"dlbl",fill:CV("--older"),
+    "font-size":"12.5"},"62 % menos de husos"));
+  s.appendChild(T({x:L+pw/2,y:H-8,"text-anchor":"middle","class":"axlbl"},
+    "Frecuencia (Hz) · ondas lentas ← → ondas rápidas"));
+  s.appendChild(T({x:L-44,y:Tp+ph/2,"class":"axlbl",transform:`rotate(-90 ${L-44} ${Tp+ph/2})`,
+    "text-anchor":"middle"},"Potencia (µV²/Hz)"));
+  document.getElementById("c-spectrum").replaceChildren(s);
+});
+
+/* ── record composition ── */
+reg(function quality(){
+  const W=1080,H=110,L=10,R=10,pw=W-L-R;
+  const s=svg(W,H); s.setAttribute("aria-label","Composición del registro");
+  const segs=[["Vigilia previa",6.4,"--surface-3",0],["Ventana de sueño analizada",8.6,"--s1",1],
+              ["Sin clasificar",0.6,"--warn",0],["Vigilia posterior",6.4,"--surface-3",0]];
+  const tot=segs.reduce((a,v)=>a+v[1],0);
+  let cx=L;
+  segs.forEach(([nm,h,c,inv])=>{const w=(h/tot)*pw;
+    s.appendChild(S("rect",{x:cx,y:26,width:Math.max(w-2,1),height:32,rx:5,fill:CV(c)}));
+    if(w>110){
+      s.appendChild(T({x:cx+w/2,y:40,"text-anchor":"middle","font-size":"11.5","font-weight":"600",
+        fill:inv?"#fff":CV("--ink2")},nm));
+      s.appendChild(T({x:cx+w/2,y:53,"text-anchor":"middle","font-size":"11",
+        fill:inv?"#fff":CV("--muted")},nf(h)+" h"));}
+    cx+=w;});
+  s.appendChild(T({x:L,y:16,"class":"axlbl"},"Cómo se reparten las 22 h 04 min del archivo"));
+  const colw=pw/segs.length;
+  segs.forEach(([nm,h,c],i)=>{const lx=L+i*colw;
+    s.appendChild(S("rect",{x:lx,y:68,width:10,height:10,rx:3,fill:CV(c),
+      stroke:CV("--border"),"stroke-width":1}));
+    s.appendChild(T({x:lx+16,y:77,"class":"tick"},`${nm} · ${nf(h)} h`));});
+  s.appendChild(T({x:L,y:92,"class":"axlbl"},
+    "Solo la ventana de sueño alimenta al modelo · el resto se descarta antes de calcular el espectro"));
+  document.getElementById("c-quality").replaceChildren(s);
+});
+
+/* ── navigation ── */
+function go(v){
+  ["vList","vUp","vRes"].forEach(id=>document.getElementById(id).classList.toggle("hidden",id!==v));
+  document.querySelectorAll("nav button").forEach(b=>
+    b.setAttribute("aria-selected", String(b.dataset.v===v || (v==="vRes"&&b.dataset.v==="vList"))));
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelector("nav").onclick=e=>{const b=e.target.closest("button[data-v]"); if(b)go(b.dataset.v);};
+document.getElementById("btnNew").onclick=()=>go("vUp");
+document.getElementById("btnRun").onclick=e=>{
+  const b=e.currentTarget, txt=b.textContent;
+  b.textContent="Analizando registro…"; b.disabled=true;
+  setTimeout(()=>{b.textContent=txt; b.disabled=false; go("vRes");}, 850);
+};
+document.getElementById("dz").onclick=()=>go("vRes");
+document.getElementById("btnOther").onclick=()=>go("vUp");
+document.getElementById("backUp").onclick=()=>go("vList");
+document.getElementById("backRes").onclick=()=>go("vList");
+document.querySelectorAll(".filerow.demo").forEach(el=>el.onclick=()=>go("vRes"));
+document.getElementById("filt").onclick=e=>{const b=e.target.closest("button"); if(!b)return;
+  [...e.currentTarget.children].forEach(c=>c.setAttribute("aria-pressed",String(c===b)));
+  filt=b.dataset.f; renderTable();};
+
+/* ── sesión ── */
+function login(){
+  document.getElementById("vLogin").classList.add("hidden");
+  document.getElementById("appHeader").classList.remove("hidden");
+  go("vList");
+}
+function logout(){
+  ["vList","vUp","vRes"].forEach(id=>document.getElementById(id).classList.add("hidden"));
+  document.getElementById("appHeader").classList.add("hidden");
+  document.getElementById("vLogin").classList.remove("hidden");
+  window.scrollTo({top:0});
+}
+document.getElementById("btnIn").onclick=login;
+document.getElementById("btnOut").onclick=logout;
+["usr","pwd"].forEach(id=>document.getElementById(id)
+  .addEventListener("keydown",e=>{if(e.key==="Enter")login();}));
+
+renderTable();
+</script>
+</body>
+</html>
