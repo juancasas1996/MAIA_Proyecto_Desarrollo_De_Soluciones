@@ -16,7 +16,8 @@ scipy>=1.11.0        # welch (densidad espectral) y estadisticas
 
 # --- Visualizacion ---
 matplotlib>=3.8.0
-plotly>=5.9.0
+plotly>=5.9.0,<6     # plotly 6.x requiere kaleido 1.x: sin el tope, una instalacion limpia trae
+                     # plotly 6 y la exportacion a PNG falla en todos los notebooks
 kaleido==0.2.1       # exporta las figuras de plotly como PNG para que se vean en GitHub.
                      # Version fija: kaleido 1.x no es compatible con plotly 5.x
 
