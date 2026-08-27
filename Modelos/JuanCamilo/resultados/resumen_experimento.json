@@ -1,0 +1,28 @@
+{
+  "experimento": "SomnoAI-JuanCamilo-RandomForest",
+  "tracking_uri": "sqlite:////Users/jmartinez/Library/CloudStorage/OneDrive-Personal/UNIANDES/PDS/MAIA_Proyecto_Desarrollo_De_Soluciones/mlruns/mlflow.db",
+  "numero_sujetos": 78,
+  "numero_caracteristicas": 20,
+  "numero_configuraciones": 18,
+  "mejores_parametros": {
+    "n_estimators": 500,
+    "max_depth": 5,
+    "min_samples_leaf": 1,
+    "max_features": "sqrt"
+  },
+  "metricas_random_forest_oof": {
+    "mae": 13.151019449690262,
+    "rmse": 15.596559329476861,
+    "r2": 0.49766091993918327
+  },
+  "metricas_ridge_oof": {
+    "mae": 10.201223743499032,
+    "rmse": 13.171438394220784,
+    "r2": 0.6417338534722218
+  },
+  "metricas_media_oof": {
+    "mae": 18.414109785077528,
+    "rmse": 22.182062763608023,
+    "r2": -0.016115841671394016
+  }
+}
