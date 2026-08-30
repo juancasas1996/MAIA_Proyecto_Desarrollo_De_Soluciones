@@ -17,6 +17,11 @@ scipy>=1.11.0        # welch (densidad espectral) y estadisticas
 # --- Modelado ---
 scikit-learn>=1.4.0  # Ridge, validacion cruzada agrupada por sujeto
 
+# --- Seguimiento de experimentos ---
+mlflow>=3.15.2       # misma version que el servidor del EC2: cliente y servidor
+                     # con versiones distintas dan errores dificiles de diagnosticar
+PyYAML>=6.0          # Experimentos/config.py lee config.yaml
+
 # --- Visualizacion ---
 matplotlib>=3.8.0
 plotly>=6.1.0

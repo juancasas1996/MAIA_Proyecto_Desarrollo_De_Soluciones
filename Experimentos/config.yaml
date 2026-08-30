@@ -1,0 +1,9 @@
+# Conexion con el servidor de MLflow.
+#
+# LO UNICO que hay que cambiar aqui es el host: la IP publica del EC2 cambia
+# cada vez que se detiene y se vuelve a encender la instancia. El script
+# start-mlflow.sh la imprime al levantar el servidor.
+
+mlflow:
+  host: 18.207.240.152
+  puerto: 8050
