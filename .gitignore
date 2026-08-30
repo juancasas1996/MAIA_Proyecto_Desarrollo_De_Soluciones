@@ -1,1 +1,13 @@
+# Datos: versionados con DVC sobre S3, no con Git
 /Data
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# MLflow: si alguien corre sin conexion al servidor, las corridas caen aqui
+# en vez de en el EC2. No deben acabar en el repo.
+mlruns/
