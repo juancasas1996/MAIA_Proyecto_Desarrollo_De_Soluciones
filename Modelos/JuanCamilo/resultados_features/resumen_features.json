@@ -1,0 +1,20 @@
+{
+  "representacion_ganadora": "B_PzOz",
+  "numero_features": 20,
+  "mejores_parametros": {
+    "n_estimators": 200,
+    "max_depth": null,
+    "min_samples_leaf": 1,
+    "max_features": "sqrt"
+  },
+  "metricas_validacion": {
+    "mae": 13.279352564102563,
+    "rmse": 14.99931528168043,
+    "r2": 0.4844811091223603
+  },
+  "metricas_test": {
+    "mae": 13.7615625,
+    "rmse": 16.784157103873284,
+    "r2": 0.448442624204601
+  }
+}
