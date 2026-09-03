@@ -4,6 +4,7 @@
 # Python
 __pycache__/
 *.py[cod]
+.venv/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -11,3 +12,6 @@ __pycache__/
 # MLflow: si alguien corre sin conexion al servidor, las corridas caen aqui
 # en vez de en el EC2. No deben acabar en el repo.
 mlruns/
+mlartifacts/
+
+.DS_Store
