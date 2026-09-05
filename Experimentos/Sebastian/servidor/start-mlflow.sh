@@ -51,10 +51,7 @@ for _ in $(seq 1 20); do
     if ss -ltn 2>/dev/null | grep -q ":${PUERTO} "; then
         printf "\n\n  MLflow arriba.\n\n"
         printf "  UI en el navegador:\n     http://%s:%s\n\n" "${IP}" "${PUERTO}"
-        printf "  Desde tu Mac, antes de correr experimentos:\n"
-        printf "     export MLFLOW_TRACKING_URI=\"http://%s:%s\"\n\n" "${IP}" "${PUERTO}"
-        printf "  Ver la salida:  tmux attach -t %s    (Ctrl+B, luego D para salir)\n" "${SESION}"
-        printf "  Detenerlo:      ./stop-mlflow.sh\n"
+        printf "  Detenerlo:  ./stop-mlflow.sh\n"
         exit 0
     fi
     printf "."

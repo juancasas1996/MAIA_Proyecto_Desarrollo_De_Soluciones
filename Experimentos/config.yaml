@@ -5,5 +5,5 @@
 # start-mlflow.sh la imprime al levantar el servidor.
 
 mlflow:
-  host: 18.207.240.152
+  host: 44.220.64.72
   puerto: 8050
