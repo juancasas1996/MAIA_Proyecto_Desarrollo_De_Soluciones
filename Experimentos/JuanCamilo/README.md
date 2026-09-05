@@ -8,7 +8,7 @@ del sueno.
 
 ## Datos
 
-El experimento utiliza `Modelos/datos/features_por_sujeto.csv`, generado a
+El experimento utiliza `Experimentos/JuanCamilo/datos/features_por_sujeto.csv`, generado a
 partir del DataFrame `datos` de `EDA/EDA_Consolidado.ipynb`.
 
 - 78 sujetos.
@@ -65,7 +65,7 @@ interpretarse como relaciones causales.
 Desde la raiz del repositorio, con el ambiente virtual activo:
 
 ```bash
-python Modelos/JuanCamilo/experimento_random_forest.py
+python Experimentos/JuanCamilo/experimento_random_forest.py
 ```
 
 Si no se define `MLFLOW_TRACKING_URI`, el script crea automáticamente una base
@@ -74,7 +74,7 @@ servidor remoto:
 
 ```bash
 export MLFLOW_TRACKING_URI="http://IP_DEL_SERVIDOR:5000"
-python Modelos/JuanCamilo/experimento_random_forest.py
+python Experimentos/JuanCamilo/experimento_random_forest.py
 ```
 
 Para consultar los experimentos locales:
@@ -88,7 +88,7 @@ Luego se abre `http://127.0.0.1:5000` y se selecciona el experimento
 
 ## Archivos generados
 
-El directorio `Modelos/JuanCamilo/resultados` contiene:
+El directorio `Experimentos/JuanCamilo/resultados` contiene:
 
 - `resultados_random_forest.csv`: las 18 configuraciones evaluadas.
 - `comparacion_modelos.csv`: comparacion entre media, Ridge y Random Forest.

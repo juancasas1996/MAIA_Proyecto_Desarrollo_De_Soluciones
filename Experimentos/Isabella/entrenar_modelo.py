@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from pathlib import Path
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import LeaveOneGroupOut
@@ -7,7 +8,19 @@ from sklearn.metrics import mean_absolute_error, r2_score
 import mlflow
 import mlflow.sklearn
 
-df = pd.read_csv('features_eeg.csv')
+
+def encontrar_raiz_repositorio():
+    inicio_script = Path(__file__).resolve().parent
+    candidatos = [Path.cwd(), *Path.cwd().parents, inicio_script, *inicio_script.parents]
+    for ruta in candidatos:
+        if (ruta / '.git').exists():
+            return ruta.resolve()
+    raise FileNotFoundError('No se encontro la raiz del repositorio Git.')
+
+
+raiz = encontrar_raiz_repositorio()
+archivo_features = raiz / 'Experimentos' / 'Isabella' / 'datos' / 'features_eeg.csv'
+df = pd.read_csv(archivo_features)
 
 X = df.drop(columns=['sujeto', 'edad']).values
 y = df['edad'].values

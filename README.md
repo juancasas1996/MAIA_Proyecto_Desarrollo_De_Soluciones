@@ -37,7 +37,10 @@ Experimentos/    Modelado y seguimiento con MLflow — Entrega 2
   config.py      conectar() — apunta MLflow al servidor y verifica que responda
   config.yaml    host y puerto del EC2. La IP cambia en cada arranque
   subject_split_seed42.json   la partición del proyecto: NO se regenera
-  <Nombre>/      Una carpeta por integrante
+  Diego/         experimentos de Gradient Boosting y señales Pz-Oz/SEF95
+  Isabella/      scripts de procesamiento EEG, Ridge y Random Forest
+  JuanCamilo/    Random Forest, datos derivados y resultados
+  Sebastian/     partición, características, Ridge y empaquetamiento
 ```
 
 ## Puesta en marcha

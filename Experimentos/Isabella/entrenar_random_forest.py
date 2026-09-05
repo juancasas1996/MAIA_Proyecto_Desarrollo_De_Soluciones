@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
@@ -6,13 +7,25 @@ from sklearn.metrics import mean_absolute_error, r2_score
 import mlflow
 import mlflow.sklearn
 
+
+def encontrar_raiz_repositorio():
+    inicio_script = Path(__file__).resolve().parent
+    candidatos = [Path.cwd(), *Path.cwd().parents, inicio_script, *inicio_script.parents]
+    for ruta in candidatos:
+        if (ruta / '.git').exists():
+            return ruta.resolve()
+    raise FileNotFoundError('No se encontro la raiz del repositorio Git.')
+
+
 # ============================================
 # Cargar datos y particion
 # ============================================
-df_fpzcz = pd.read_csv('caracteristicas_noche_FpzCz.csv')
-df_pzoz = pd.read_csv('caracteristicas_noche_PzOz.csv')
+raiz = encontrar_raiz_repositorio()
+datos_sebastian = raiz / 'Experimentos' / 'Sebastian' / 'datos'
+df_fpzcz = pd.read_csv(datos_sebastian / 'caracteristicas_noche_FpzCz.csv')
+df_pzoz = pd.read_csv(datos_sebastian / 'caracteristicas_noche_PzOz.csv')
 
-with open('subject_split_seed42.json') as f:
+with (raiz / 'Experimentos' / 'subject_split_seed42.json').open(encoding='utf-8') as f:
     particion = json.load(f)
 
 test_ids = set(particion['test_subject_ids'])
@@ -29,7 +42,10 @@ def promediar_por_sujeto(df):
     columnas_numericas = df.select_dtypes(include=[np.number]).columns.tolist()
     if 'subject' in columnas_numericas:
         columnas_numericas.remove('subject')
-        return df.groupby('subject')[columnas_numericas].mean().reset_index()# Usamos el canal Fpz-Cz...
+    return df.groupby('subject')[columnas_numericas].mean().reset_index()
+
+
+# Usamos el canal Fpz-Cz.
 df_sujeto = promediar_por_sujeto(df_fpzcz)
 
 X_cols = [c for c in df_sujeto.columns if c not in ['subject', 'age']]

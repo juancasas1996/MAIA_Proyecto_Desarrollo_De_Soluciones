@@ -106,8 +106,10 @@ def guardar_grafica_importancias(importancias: pd.DataFrame, destino: Path) -> N
 
 def main() -> None:
     raiz = encontrar_raiz_repositorio()
-    archivo_datos = raiz / "Modelos" / "datos" / "features_por_sujeto.csv"
-    salida = raiz / "Modelos" / "JuanCamilo" / "resultados"
+    archivo_datos = (
+        raiz / "Experimentos" / "JuanCamilo" / "datos" / "features_por_sujeto.csv"
+    )
+    salida = raiz / "Experimentos" / "JuanCamilo" / "resultados"
     salida.mkdir(parents=True, exist_ok=True)
 
     if not archivo_datos.exists():
