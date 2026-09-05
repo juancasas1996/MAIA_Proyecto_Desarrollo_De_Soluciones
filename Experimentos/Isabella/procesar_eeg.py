@@ -1,12 +1,24 @@
 import mne
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from scipy.signal import welch
 from mne.datasets.sleep_physionet.age import fetch_data
+
+
+def encontrar_raiz_repositorio():
+    inicio_script = Path(__file__).resolve().parent
+    candidatos = [Path.cwd(), *Path.cwd().parents, inicio_script, *inicio_script.parents]
+    for ruta in candidatos:
+        if (ruta / '.git').exists():
+            return ruta.resolve()
+    raise FileNotFoundError('No se encontro la raiz del repositorio Git.')
+
 
 # ============================================
 # PASO 1: Descargar 8 sujetos (indices 1 al 8)
 # ============================================
+raiz = encontrar_raiz_repositorio()
 indices_sujetos = [1, 2, 3, 4, 5, 6, 7, 8]
 print('Descargando sujetos...')
 archivos_descargados = fetch_data(subjects=indices_sujetos, recording=[1])
@@ -15,7 +27,7 @@ print('Descarga completa.')
 # ============================================
 # PASO 2: Leer la tabla de edades
 # ============================================
-tabla_edades = pd.read_excel('SC-subjects.xls')
+tabla_edades = pd.read_excel(raiz / 'Data' / 'SC-subjects.xls')
 
 def obtener_edad(indice_sujeto):
     fila = tabla_edades[tabla_edades['subject'] == indice_sujeto]
@@ -52,7 +64,9 @@ for i, indice in enumerate(indices_sujetos):
         filas.append(fila)
 
 df = pd.DataFrame(filas)
-df.to_csv('features_eeg.csv', index=False)
-print('Listo! Tabla guardada como features_eeg.csv')
+archivo_salida = raiz / 'Experimentos' / 'Isabella' / 'datos' / 'features_eeg.csv'
+archivo_salida.parent.mkdir(parents=True, exist_ok=True)
+df.to_csv(archivo_salida, index=False)
+print(f'Listo! Tabla guardada como {archivo_salida}')
 print(df.shape)
 print(df['sujeto'].value_counts())
